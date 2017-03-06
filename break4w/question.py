@@ -1,11 +1,12 @@
 import inspect
 
+import numpy as np
+
 
 class Question:
     """A base object class for handling American Gut Data dictionary entries"""
-    true_values = {'yes', 'Yes', 'YES', 'true', 'True', 'TRUE',
-                   1, 1.0, True}
-    false_values = {'no', 'No', 'NO', 'false', 'False', 'FALSE', 0, 0.0, False}
+    true_values = {'yes', 'true', 1, 1.0, True}
+    false_values = {'no', 'false', 0, 0.0, False}
 
     def __init__(self, name, description, dtype, clean_name=None,
                  free_response=False, mimarks=False, ontology=None,
@@ -87,6 +88,49 @@ class Question:
         if self.name not in map_.columns:
             raise ValueError('%s is not a column in the supplied map!'
                              % self.name)
+
+    def remap_dtype(self, map_):
+        """Makes sure the target column in map_ has the correct datatype
+
+        map_ : DataFrame
+            A pandas dataframe containing the column described by the question
+            name.
+
+        """
+        if self.dtype == bool:
+            def convert_dtype(x):
+                if isinstance(x, str):
+                    return x.lower()
+                else:
+                    return x
+
+            map_[self.name] = map_[self.name].apply(convert_dtype)
+
+            if not (set(map_[self.name].dropna()).issubset(
+                    self.true_values.union(self.false_values))):
+                raise TypeError('%s cannot be cast to a bool value.'
+                                % self.name)
+
+            def remap_(x):
+                if isinstance(x, str) and x.lower() in self.true_values:
+                    return True
+                elif isinstance(x, str) and x.lower() in self.false_values:
+                    return False
+                elif np.isnan(x):
+                    return x
+                else:
+                    try:
+                        return bool(x)
+                    except:
+                        return np.nan
+        else:
+            def remap_(x):
+                return self.dtype(x)
+
+        map_[self.name] = map_[self.name].apply(remap_).astype(self.dtype)
+        map_.replace('nan', np.nan, inplace=True)
+
+        # self._update_order(remap_)
 
     def check_ontology(self):
         """
