@@ -115,15 +115,16 @@ class Categorical(Question):
         def _remap(x):
             if pd.isnull(x) or (x is None):
                 return np.nan
-            elif isinstance(x, str) and x in self.ambiguous_values:
+            elif x in self.ambiguous_values:
                 return np.nan
             else:
                 return x
 
-        map_[self.name] = map_[self.name].apply(_remap)
-        self._update_order(_remap)
+        if self.ambiguous_values is not None:
+            map_[self.name] = map_[self.name].apply(_remap)
+            self._update_order(_remap)
         self._update_log('remove ambigious values', 'drop',
-                         list(self.ambiguous_values))
+                         self.ambiguous_values)
 
     def analysis_drop_infrequent(self, map_):
         """Removes groups below a frequency cutoff
@@ -249,3 +250,4 @@ class Categorical(Question):
                           for v in (actual_values - acceptable_values)]
             raise ValueError('The following are not valid values: %s'
                              % ('\n'.join(descriptor)))
+
