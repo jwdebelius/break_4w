@@ -12,12 +12,13 @@ class CategoricalTest(TestCase):
 
     def setUp(self):
 
-        self.map_ = pd.DataFrame([['2', '4', '4'],
-                                  ['False', 'True', 'True'],
-                                  ['Striker', 'D-man', 'D-man']],
+        self.map_ = pd.DataFrame([['1', '2', '2', '4'],
+                                  ['TBD', 'True', 'True', 'False'],
+                                  ['Striker', 'D-man', 'D-man', 'Goalie']],
                                  index=['years_on_team',
                                         'team_captain', 'position'],
-                                 columns=['Bitty', 'Ransom', 'Holster'],
+                                 columns=['Bitty', 'Ransom', 'Holster',
+                                          'Johnson'],
                                  ).T
         self.name = 'position'
         self.description = 'Where the player can normally be found on the ice'
@@ -46,8 +47,9 @@ class CategoricalTest(TestCase):
 
     def test_update_order(self):
 
-        # Checks that the log is empty
-        self.assertEqual(self.c.log, [])
+        # Checks the current order and extremes
+        self.assertEqual(self.c.order, ["Striker", "D-man", "Goalie"])
+        self.assertEqual(self.c.extremes, ["Striker", "Goalie"])
 
         # Sets up a function to adjust the data
         def remap_(x):
@@ -73,29 +75,67 @@ class CategoricalTest(TestCase):
         self.assertEqual(set(self.map_[self.c.name].unique()),
                          {'D-man', np.nan})
 
-    def test_analysis_remove_ambigious(self):
-        # Checks the current map status
-        self.assertEqual(set(self.map_[self.c.name].unique()),
-                         {'Striker', 'D-man'})
+    def test_analysis_remove_ambigious_str(self):
+        c = Categorical(name='team_captain',
+                        description='who has the C or AC',
+                        dtype=str,
+                        order=['True', 'False'],
+                        ambiguous_values='TBD'
+                        )
+        # Checks the current status
+        pdt.assert_series_equal(
+            self.map_['team_captain'],
+            pd.Series(['TBD', 'True', 'True', 'False'],
+                      index=['Bitty', 'Ransom', 'Holster', 'Johnson'],
+                      name='team_captain')
+            )
 
-        # Sets up the data to handle drop ambigious values
-        self.c.ambiguous_values = {"D-man"}
-        self.c.analyis_remove_ambiguious(self.map_)
+        c.analyis_remove_ambiguious(self.map_)
 
         # Checks the remapping
-        self.assertEqual(set(self.map_[self.c.name].unique()),
-                         {'Striker', np.nan})
+        pdt.assert_series_equal(
+            self.map_['team_captain'],
+            pd.Series([np.nan, 'True', 'True', 'False'],
+                      index=['Bitty', 'Ransom', 'Holster', 'Johnson'],
+                      name='team_captain')
+            )
+
+    def test_analysis_remove_ambigious_list(self):
+        c = Categorical(name='team_captain',
+                        description='who has the C or AC',
+                        dtype=str,
+                        order=['True', 'False'],
+                        ambiguous_values=['TBD']
+                        )
+        # Checks the current status
+        pdt.assert_series_equal(
+            self.map_['team_captain'],
+            pd.Series(['TBD', 'True', 'True', 'False'],
+                      index=['Bitty', 'Ransom', 'Holster', 'Johnson'],
+                      name='team_captain')
+            )
+
+        c.analyis_remove_ambiguious(self.map_)
+
+        # Checks the remapping
+        pdt.assert_series_equal(
+            self.map_['team_captain'],
+            pd.Series([np.nan, 'True', 'True', 'False'],
+                      index=['Bitty', 'Ransom', 'Holster', 'Johnson'],
+                      name='team_captain')
+            )
 
     def test_analysis_convert_to_numeric(self):
         self.assertEqual(self.c.order, ["Striker", "D-man", "Goalie"])
         self.c.analysis_convert_to_numeric(self.map_)
         self.assertEqual(self.c.order, [0, 1, 2])
-        pdt.assert_series_equal(self.map_['position'],
-                                pd.Series(data=[0, 1, 1],
-                                          index=['Bitty', 'Ransom', 'Holster'],
-                                          name='position',
-                                          )
-                                )
+        pdt.assert_series_equal(
+            self.map_['position'],
+            pd.Series(data=[0, 1, 1, 2],
+                      index=['Bitty', 'Ransom', 'Holster', 'Johnson'],
+                      name='position',
+                      )
+            )
         self.assertEqual(self.c.log[0]['transformation'],
                          'Striker >>> 0 | D-man >>> 1 | Goalie >>> 2')
 
@@ -107,8 +147,9 @@ class CategoricalTest(TestCase):
                          )
         pdt.assert_series_equal(self.map_['position'],
                                 pd.Series(data=["(0) Striker", "(1) D-man",
-                                                "(1) D-man"],
-                                          index=['Bitty', 'Ransom', 'Holster'],
+                                                "(1) D-man", "(2) Goalie"],
+                                          index=['Bitty', 'Ransom', 'Holster',
+                                                 'Johnson'],
                                           name='position',
                                           )
                                 )
@@ -122,8 +163,9 @@ class CategoricalTest(TestCase):
         self.c.analysis_remap_null(self.map_)
         self.assertEqual(self.c.order, ['D-man', 'Goalie'])
         pdt.assert_series_equal(self.map_['position'],
-                                pd.Series([np.nan, 'D-man', 'D-man'],
-                                          index=['Bitty', 'Ransom', 'Holster'],
+                                pd.Series([np.nan, 'D-man', 'D-man', 'Goalie'],
+                                          index=['Bitty', 'Ransom', 'Holster',
+                                                 'Johnson'],
                                           name='position'))
 
     def test_validate_map_pass(self):
@@ -133,6 +175,7 @@ class CategoricalTest(TestCase):
         self.c.name = 'years_on_team'
         with self.assertRaises(ValueError):
             self.c.validate_map(self.map_)
+
 
 if __name__ == '__main__':
     main()

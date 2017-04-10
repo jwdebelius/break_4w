@@ -28,11 +28,9 @@ class Categorical(Question):
             The list of responses to the question
         clean_name : str, optional
             A nicer version of the way the column should be named.
-        remap : function
-            A function used to remap the data in the question.
         frequency_cutoff : float, optional
             The minimum number of observations required to keep a sample group.
-        ambigigous_values : set, optional
+        ambigigous_values : str, list, optional
             A list of values which are considered ambiguous and removed when
             `drop_ambiguous` is `True`.
         free_response: bool, optional
@@ -74,7 +72,12 @@ class Categorical(Question):
             self.extremes = [order[0], order[-1]]
 
         self.frequency_cutoff = frequency_cutoff
-        self.ambiguous_values = ambiguous_values
+        if isinstance(ambiguous_values, str):
+            self.ambiguous_values = set([ambiguous_values])
+        elif ambiguous_values is None:
+            self.ambiguous_values = None
+        else:
+            self.ambiguous_values = set(ambiguous_values)
 
     def _update_order(self, remap_):
         """Updates the order and earlier order arguments
