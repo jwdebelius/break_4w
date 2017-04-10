@@ -116,12 +116,20 @@ class Question:
             raise ValueError('%s is not a column in the supplied map!'
                              % self.name)
 
-    def remap_dtype(self, map_):
+    def analysis_remap_dtype(self, map_):
         """Makes sure the target column in map_ has the correct datatype
 
+        Parameters
+        ----------
         map_ : DataFrame
             A pandas dataframe containing the column described by the question
             name.
+
+        Raises
+        ------
+        ValueError
+            If the column identified by the question object is not part of the
+            supplied DataFrame.
 
         """
         if self.dtype == bool:

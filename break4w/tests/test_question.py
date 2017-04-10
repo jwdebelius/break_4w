@@ -101,7 +101,7 @@ class QuestionTest(TestCase):
         with self.assertRaises(ValueError):
             self.q.check_map(self.map_)
 
-    def test_remap_dtype_bool_str(self):
+    def test_analysis_remap_dtype_bool_str(self):
         q = Question(name='team_captain',
                      description='who is has the C or AC',
                      dtype=bool
@@ -109,11 +109,11 @@ class QuestionTest(TestCase):
         self.assertTrue(
             self.map_['team_captain'].apply(lambda x: isinstance(x, str)).all()
             )
-        q.remap_dtype(self.map_)
+        q.analysis_remap_dtype(self.map_)
         npt.assert_array_equal(np.array([False, True, True]),
                                self.map_['team_captain'].values)
 
-    def test_remap_dtype_bool(self):
+    def test_analysis_remap_dtype_bool(self):
         self.map_['team_captain'] = self.map_['team_captain'] == 'True'
         npt.assert_array_equal(np.array([False, True, True]),
                                self.map_['team_captain'].values)
@@ -121,11 +121,11 @@ class QuestionTest(TestCase):
                      description='who has the C or AC',
                      dtype=bool
                      )
-        q.remap_dtype(self.map_)
+        q.analysis_remap_dtype(self.map_)
         npt.assert_array_equal(np.array([False, True, True]),
                                self.map_['team_captain'].values)
 
-    def test_remap_dtype_bool_int(self):
+    def test_analysis_remap_dtype_bool_int(self):
         self.map_['team_captain'] = \
             (self.map_['team_captain'] == 'True').astype(int)
         npt.assert_array_equal(np.array([0, 1, 1]),
@@ -134,16 +134,16 @@ class QuestionTest(TestCase):
                      description='who is has the C or AC',
                      dtype=bool
                      )
-        q.remap_dtype(self.map_)
+        q.analysis_remap_dtype(self.map_)
         npt.assert_array_equal(np.array([False, True, True]),
                                self.map_['team_captain'].values)
 
-    def test_remap_dtype_int(self):
+    def test_analysis_remap_dtype_int(self):
         q = Question(name='years_on_team',
                      description=('The number of years a player has played '
                                   'hockey for Samwell'),
                      dtype=float)
-        q.remap_dtype(self.map_)
+        q.analysis_remap_dtype(self.map_)
         npt.assert_array_equal(np.array([2, 4, 4]),
                                self.map_['years_on_team'].values)
 
