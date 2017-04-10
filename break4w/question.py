@@ -37,8 +37,6 @@ class Question:
             float, int, str).
         clean_name : str, optional
             A nicer version of the way the column should be named.
-        remap : function
-            A function used to remap the data in the question.
         free_response: bool, optional
             Whether the question is a free response question or controlled
             vocabulary
