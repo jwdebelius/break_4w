@@ -128,7 +128,9 @@ class Question:
         """
         if self.dtype == bool:
             def convert_dtype(x):
-                if isinstance(x, str):
+                if pd.isnull(x):
+                    return x
+                elif isinstance(x, str):
                     return x.lower()
                 else:
                     return x
@@ -154,7 +156,7 @@ class Question:
             def remap_(x):
                 return self.dtype(x)
 
-        map_[self.name] = map_[self.name].apply(remap_).astype(self.dtype)
+        map_[self.name] = map_[self.name].apply(remap_)
         map_.replace('nan', np.nan, inplace=True)
 
         self._update_log('Cast data type', 'transformation',
