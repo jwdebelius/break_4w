@@ -1,5 +1,7 @@
 from unittest import TestCase, main
 
+import datetime
+
 import pandas as pd
 import numpy as np
 import numpy.testing as npt
@@ -36,7 +38,11 @@ class QuestionTest(TestCase):
         self.assertFalse(self.q.ontology)
         self.assertFalse(self.q.ebi_required)
         self.assertFalse(self.q.qiita_required)
-        self.assertEqual(self.q.missing, None)
+        self.assertEqual(self.q.missing,
+                         {'not applicable', 'missing: not provided',
+                          'missing: not collected', 'missing: restricted',
+                          'not provided', 'not collected', 'restricted'})
+        self.assertEqual(self.q.log, [])
 
     def test_init_error_name(self):
         with self.assertRaises(TypeError):
@@ -66,6 +72,26 @@ class QuestionTest(TestCase):
                               dtype=self.dtype,
                               clean_name=self.dtype
                               )
+
+    def test_update_log(self):
+        self.assertEqual(len(self.q.log), 0)
+        self.q._update_log(
+            command='dibs',
+            transform_type='replace',
+            transformation='metaphysical goalie johnson > Bitty'
+            )
+        self.assertEqual(len(self.q.log), 1)
+        log_ = self.q.log[0]
+
+        self.assertTrue(isinstance(log_, dict))
+        self.assertEqual({'timestamp', 'column', 'command', 'transform_type',
+                          'transformation'}, set(log_.keys()))
+        self.assertTrue(isinstance(log_['timestamp'], datetime.datetime))
+        self.assertEqual(log_['column'], 'player_name')
+        self.assertEqual(log_['command'], 'dibs')
+        self.assertEqual(log_['transform_type'], 'replace')
+        self.assertEqual(log_['transformation'],
+                         'metaphysical goalie johnson > Bitty')
 
     def test_check_map_pass(self):
         self.q.check_map(self.map_)

@@ -1,12 +1,21 @@
+import datetime
 import inspect
 
 import numpy as np
+import pandas as pd
 
 
 class Question:
     """A base object class for handling American Gut Data dictionary entries"""
     true_values = {'yes', 'true', 1, 1.0, True}
     false_values = {'no', 'false', 0, 0.0, False}
+    ebi_null = {'not applicable',
+                'missing: not provided',
+                'missing: not collected',
+                'missing: restricted',
+                'not provided',
+                'not collected',
+                'restricted'}
 
     def __init__(self, name, description, dtype, clean_name=None,
                  free_response=False, mimarks=False, ontology=None,
@@ -37,7 +46,12 @@ class Question:
             If the question was a mimarks standard field
         ontology : str, optional
             The type of ontology, if any, which was used in the field value.
-
+        ebi_required : bool, optional
+            Describes whether the question is required by EBI
+        qiita_required : bool, optional
+            Is the question required by qiita
+        missing : str, list, optional
+            Acceptable missing values
         """
 
         # Checks the arguments
@@ -67,7 +81,22 @@ class Question:
         self.ontology = ontology
         self.ebi_required = ebi_required
         self.qiita_required = qiita_required
-        self.missing = missing
+        if missing is None:
+            self.missing = self.ebi_null
+        else:
+            self.missing = missing
+
+        self.log = []
+
+    def _update_log(self, command, transform_type, transformation):
+        """Updates the in-object documentation"""
+        self.log.append({
+            'timestamp': datetime.datetime.now(),
+            'column': self.name,
+            'command': command,
+            'transform_type': transform_type,
+            'transformation': transformation,
+            })
 
     def check_map(self, map_):
         """Checks the group exists in the metadata
@@ -112,17 +141,15 @@ class Question:
                                 % self.name)
 
             def remap_(x):
+                if pd.isnull(x):
+                    return x
                 if isinstance(x, str) and x.lower() in self.true_values:
                     return True
                 elif isinstance(x, str) and x.lower() in self.false_values:
                     return False
-                elif np.isnan(x):
-                    return x
                 else:
-                    try:
-                        return bool(x)
-                    except:
-                        return np.nan
+                    return bool(x)
+
         else:
             def remap_(x):
                 return self.dtype(x)
@@ -130,7 +157,20 @@ class Question:
         map_[self.name] = map_[self.name].apply(remap_).astype(self.dtype)
         map_.replace('nan', np.nan, inplace=True)
 
-        # self._update_order(remap_)
+        self._update_log('Cast data type', 'transformation',
+                         'to %s' % self.dtype)
+
+    def write_providence(self):
+        """Writes the question provinence to a string
+
+        To be added!
+        """
+        pass
+
+    def read_providence(self, fp_):
+        """Reads the existing question provenance
+        """
+        pass
 
     def check_ontology(self):
         """
@@ -140,7 +180,7 @@ class Question:
         """
         pass
 
-    def check_requried(self):
+    def check_required(self):
         """Checks whether or not the question is a required question
 
         To be added!
