@@ -118,7 +118,7 @@ class QuestionTest(TestCase):
         npt.assert_array_equal(np.array([False, True, True]),
                                self.map_['team_captain'].values)
         q = Question(name='team_captain',
-                     description='who is has the C or AC',
+                     description='who has the C or AC',
                      dtype=bool
                      )
         q.remap_dtype(self.map_)
