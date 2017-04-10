@@ -248,6 +248,11 @@ class Categorical(Question):
         if not acceptable_values.issuperset(actual_values):
             descriptor = ['\t%s' % v
                           for v in (actual_values - acceptable_values)]
+            self._update_log('Validate the mapping file', 'error',
+                             'The following are not valid values: %s'
+                             % ' | '.join(descriptor))
             raise ValueError('The following are not valid values: %s'
                              % ('\n'.join(descriptor)))
-
+        else:
+            self._update_log('Validate the mapping file', 'pass',
+                             'The column meets requirements.')
