@@ -223,6 +223,38 @@ class Categorical(Question):
                 self.order.remove(m)
         self._update_log('correct null values', 'drop', list(self.missing))
 
+    def analysis_remap_values(self, map_, remap):
+        """Remaps the values in the mapping file
+
+        Paramters
+        ---------
+        Parameters
+        ----------
+        map_ : DataFrame
+            A pandas object containing the data to be analyzed. The
+            Question `name` should be a column in the `map_`.
+        remap: function, dict
+            Describes how the data should be remapped. If a dictionary is
+            passed, the values will be replaced as keys. Otherwise, the
+            the function will be used directly.
+        """
+        if isinstance(remap, dict):
+            def remap_(x):
+                if x in remap:
+                    return remap[x]
+                else:
+                    return x
+        else:
+            remap_ = remap
+
+        values = map_[self.name].unique()
+        map_[self.name] = map_[self.name].apply(remap_)
+        self._update_order(remap_)
+        self._update_log('remap values', 'replace',
+                         ' | '.join(['%s >>> %s' % (value, remap_(value))
+                                     for value in values])
+                         )
+
     def validate_map(self, map_):
         """Checks the values in the mapping file are correct
 

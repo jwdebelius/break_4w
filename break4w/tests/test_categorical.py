@@ -168,6 +168,30 @@ class CategoricalTest(TestCase):
                                                  'Johnson'],
                                           name='position'))
 
+    def test_analysis_remap_values(self):
+        pdt.assert_series_equal(
+            self.map_['position'],
+            pd.Series(['Striker', 'D-man', 'D-man', 'Goalie'],
+                      index=['Bitty', 'Ransom', 'Holster', 'Johnson'],
+                      name='position')
+            )
+
+        def remap_(x):
+            if x in {"D-man", "Goalie"}:
+                return "Defense"
+            elif x in {"Striker"}:
+                return "Offense"
+            else:
+                return "Not on the team!"
+
+        self.c.analysis_remap_values(self.map_, remap_)
+        pdt.assert_series_equal(
+            self.map_['position'],
+            pd.Series(['Offense', 'Defense', 'Defense', 'Defense'],
+                      index=['Bitty', 'Ransom', 'Holster', 'Johnson'],
+                      name='position')
+            )
+
     def test_validate_map_pass(self):
         self.c.validate_map(self.map_)
 
