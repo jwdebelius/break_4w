@@ -18,7 +18,6 @@ install:
   - conda create --yes -n env_name python=$PYTHON_VERSION --file conda_requirements.txt
   - source activate env_name
   - conda info --envs
-  - python --PYTHON_VERSION
   - pip install . --no-deps
 script:
   - nosetest --with-coverage
