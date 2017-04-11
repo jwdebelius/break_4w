@@ -20,7 +20,7 @@ install:
   - conda info --envs
   - pip install . --no-deps
 script:
-  - nosetest --with-coverage
+  - nosetests --with-coverage
 notifications:
   webhooks:
     urls:
