@@ -72,7 +72,7 @@ class Bool(Categorical):
             name.
         """
         self.check_map(map_)
-        self.remap_dtype(map_)
+        self.analysis_remap_dtype(map_)
 
         def remap_(x):
             if pd.isnull(x):

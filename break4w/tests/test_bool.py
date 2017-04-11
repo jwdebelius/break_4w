@@ -50,7 +50,7 @@ class BoolTest(TestCase):
                       name='team_captain')
             )
         self.b.analyis_remove_ambiguious(self.map_)
-        self.b.remap_dtype(self.map_)
+        self.b.analysis_remap_dtype(self.map_)
         self.b.analysis_convert_to_word(self.map_)
 
         pdt.assert_series_equal(
