@@ -45,6 +45,11 @@ class CategoricalTest(TestCase):
         self.assertEqual(test.type, 'Categorical')
         self.assertEqual(test.frequency_cutoff, None)
 
+    def test_categorical_init_error(self):
+        with self.assertRaises(ValueError):
+            Categorical(self.name, self.description, order=self.order,
+                        dtype=ValueError)
+
     def test_update_order(self):
 
         # Checks the current order and extremes
@@ -125,37 +130,79 @@ class CategoricalTest(TestCase):
                       name='team_captain')
             )
 
-    def test_analysis_convert_to_numeric(self):
-        self.assertEqual(self.c.order, ["Striker", "D-man", "Goalie"])
-        self.c.analysis_convert_to_numeric(self.map_)
-        self.assertEqual(self.c.order, [0, 1, 2])
+    def test_analysis_remove_ambigious_nan(self):
+        # Sets the ambigious value as goalie
+        self.c.ambiguous_values = 'Goalie'
+        # Drops the striker value
+        self.map_.loc['Bitty', 'position'] = np.nan
+
+        self.c.analyis_remove_ambiguious(self.map_)
+
+        # Checks the remapping
         pdt.assert_series_equal(
             self.map_['position'],
-            pd.Series(data=[0, 1, 1, 2],
+            pd.Series([np.nan, 'D-man', 'D-man', np.nan],
+                      index=['Bitty', 'Ransom', 'Holster', 'Johnson'],
+                      name='position')
+            )
+
+    def test_analysis_convert_to_numeric(self):
+        self.c.order = ["Striker", "D-man"]
+        self.c.analysis_convert_to_numeric(self.map_)
+        self.assertEqual(self.c.order, [0, 1])
+        pdt.assert_series_equal(
+            self.map_['position'],
+            pd.Series(data=[0, 1, 1, np.nan],
                       index=['Bitty', 'Ransom', 'Holster', 'Johnson'],
                       name='position',
                       )
             )
         self.assertEqual(self.c.log[0]['transformation'],
-                         'Striker >>> 0 | D-man >>> 1 | Goalie >>> 2')
+                         'Striker >>> 0 | D-man >>> 1')
+
+    def test_analysis_convert_to_numeric_number(self):
+        c = Categorical(name='years_on_team',
+                        description="Time in SMH in Bitty's frog year",
+                        order=['1', '2', '3', '4'],
+                        dtype=int)
+        # Converts the data to numeric
+        c.analysis_remap_dtype(self.map_)
+        c.analysis_convert_to_numeric(self.map_)
+        pdt.assert_series_equal(self.map_['years_on_team'],
+                                pd.Series([1, 2, 2, 4], name='years_on_team',
+                                          index=['Bitty', 'Ransom', 'Holster',
+                                                 'Johnson']))
 
     def test_analysis_label_order(self):
-        self.assertEqual(self.c.order, ["Striker", "D-man", "Goalie"])
+        self.c.order = ["Striker", "D-man"]
         self.c.analysis_label_order(self.map_)
         self.assertEqual(self.c.order,
-                         ["(0) Striker", "(1) D-man", "(2) Goalie"]
+                         ["(0) Striker", "(1) D-man"]
                          )
         pdt.assert_series_equal(self.map_['position'],
                                 pd.Series(data=["(0) Striker", "(1) D-man",
-                                                "(1) D-man", "(2) Goalie"],
+                                                "(1) D-man", np.nan],
                                           index=['Bitty', 'Ransom', 'Holster',
                                                  'Johnson'],
                                           name='position',
                                           )
                                 )
         self.assertEqual(self.c.log[0]['transformation'],
-                         'Striker >>> (0) Striker | D-man >>> (1) D-man |'
-                         ' Goalie >>> (2) Goalie')
+                         'Striker >>> (0) Striker | D-man >>> (1) D-man')
+
+    def test_analysis_label_order_number(self):
+        c = Categorical(name='years_on_team',
+                        description="Time in SMH in Bitty's frog year",
+                        order=['1', '2', '3', '4'],
+                        dtype=int)
+        # Converts the data to numeric
+        c.analysis_remap_dtype(self.map_)
+        c.analysis_label_order(self.map_)
+        pdt.assert_series_equal(self.map_['years_on_team'],
+                                pd.Series([1, 2, 2, 4],
+                                          name='years_on_team',
+                                          index=['Bitty', 'Ransom', 'Holster',
+                                                 'Johnson']))
 
     def test_analysis_remap_null(self):
         self.c.missing = ['Striker']
@@ -168,7 +215,7 @@ class CategoricalTest(TestCase):
                                                  'Johnson'],
                                           name='position'))
 
-    def test_analysis_remap_values(self):
+    def test_analysis_remap_values_function(self):
         pdt.assert_series_equal(
             self.map_['position'],
             pd.Series(['Striker', 'D-man', 'D-man', 'Goalie'],
@@ -188,6 +235,25 @@ class CategoricalTest(TestCase):
         pdt.assert_series_equal(
             self.map_['position'],
             pd.Series(['Offense', 'Defense', 'Defense', 'Defense'],
+                      index=['Bitty', 'Ransom', 'Holster', 'Johnson'],
+                      name='position')
+            )
+
+    def test_analysis_remap_values_dict(self):
+        pdt.assert_series_equal(
+            self.map_['position'],
+            pd.Series(['Striker', 'D-man', 'D-man', 'Goalie'],
+                      index=['Bitty', 'Ransom', 'Holster', 'Johnson'],
+                      name='position')
+            )
+
+        remap_ = {'D-man': 'Defense',
+                  'Striker': "Offense"}
+
+        self.c.analysis_remap_values(self.map_, remap_)
+        pdt.assert_series_equal(
+            self.map_['position'],
+            pd.Series(['Offense', 'Defense', 'Defense', 'Goalie'],
                       index=['Bitty', 'Ransom', 'Holster', 'Johnson'],
                       name='position')
             )
