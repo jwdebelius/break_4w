@@ -61,10 +61,11 @@ class ContinousTest(TestCase):
                       name='years_on_team')
             )
         self.c.lower = 2
+        self.c.upper = 3
         self.c.analysis_drop_outliers(self.map_)
         pdt.assert_series_equal(
             self.map_['years_on_team'],
-            pd.Series([np.nan, 2, 2, 4],
+            pd.Series([np.nan, 2, 2, np.nan],
                       index=['Bitty', 'Ransom', 'Holster', 'Johnson'],
                       name='years_on_team')
             )
