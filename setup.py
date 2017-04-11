@@ -31,7 +31,6 @@ setup(name='break4w',
       packages=['break4w', 'break4w.tests'],
       install_requires=['numpy >= 1.10.0',
                         'pandas >= 0.18.0',
-                        'scipy >= 0.15.1',
                         'nose >= 1.3.7',
                         ],
       )
