@@ -81,8 +81,6 @@ class Bool(Categorical):
                 return 'yes'
             elif not x:
                 return 'no'
-            else:
-                return np.nan
 
         map_[self.name] = map_[self.name].apply(remap_)
         self._update_order(remap_)
