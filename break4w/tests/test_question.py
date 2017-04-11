@@ -5,6 +5,7 @@ import datetime
 import pandas as pd
 import numpy as np
 import numpy.testing as npt
+import pandas.util.testing as pdt
 
 from break4w.question import Question
 
@@ -146,6 +147,31 @@ class QuestionTest(TestCase):
         q.analysis_remap_dtype(self.map_)
         npt.assert_array_equal(np.array([2, 4, 4]),
                                self.map_['years_on_team'].values)
+
+    def test_write_providence(self):
+        known_log = pd.DataFrame(
+            np.array([[datetime.datetime.now(), 'team_captain',
+                       'Cast data type', 'transformation', 'to bool'],
+                      [datetime.datetime.now(), 'team_captain', 'Write Log',
+                       'recording', '']]),
+            columns=['timestamp', 'column', 'command', 'transform_type',
+                     'transformation']
+           )
+
+        q = Question(name='team_captain',
+                     description='who is has the C or AC',
+                     dtype=bool
+                     )
+        q.analysis_remap_dtype(self.map_)
+        log_ = q.write_providence()
+        self.assertEqual(known_log.shape, log_.shape)
+        pdt.assert_index_equal(known_log.columns, log_.columns)
+        pdt.assert_series_equal(known_log['column'], log_['column'])
+        pdt.assert_series_equal(known_log['command'], log_['command'])
+        pdt.assert_series_equal(known_log['transform_type'],
+                                log_['transform_type'])
+        pdt.assert_series_equal(known_log['transformation'],
+                                log_['transformation'])
 
 if __name__ == '__main__':
     main()

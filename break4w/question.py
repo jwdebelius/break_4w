@@ -50,6 +50,17 @@ class Question:
             Is the question required by qiita
         missing : str, list, optional
             Acceptable missing values
+
+        Raises
+        ------
+        TypeError
+            The name is not a string
+        TypeError
+            The description is not a string
+        TypeError
+            The dtype is not a class
+        TypeError
+            The `clean_name` is not a string.
         """
 
         # Checks the arguments
@@ -113,6 +124,8 @@ class Question:
 
         """
         if self.name not in map_.columns:
+            self._update_log('column check', 'validation',
+                             'column does not exist!')
             raise ValueError('%s is not a column in the supplied map!'
                              % self.name)
 
@@ -132,6 +145,7 @@ class Question:
             supplied DataFrame.
 
         """
+        self.check_map(map_)
         if self.dtype == bool:
             def convert_dtype(x):
                 if pd.isnull(x):
@@ -165,40 +179,33 @@ class Question:
         map_[self.name] = map_[self.name].apply(remap_)
         map_.replace('nan', np.nan, inplace=True)
 
-        self._update_log('Cast data type', 'transformation',
-                         'to %s' % self.dtype)
+        type_str = 'to %s' % self.dtype
+        type_str = type_str.replace("'", "")
+        type_str = type_str.replace("<class ", "").replace(">", "")
+        self._update_log('Cast data type', 'transformation', type_str)
 
     def write_providence(self):
         """Writes the question provinence to a string
 
-        To be added!
+        Returns
+        -------
+        DataFrame
+            A pandas dataframe describing the time, column, action taken,
+            action type, and changes in the data.
         """
-        pass
+        self._update_log('Write Log', 'recording', '')
+        return pd.DataFrame(self.log)[['timestamp', 'column', 'command',
+                                       'transform_type', 'transformation']]
 
-    def read_providence(self, fp_):
+    def _read_providence(self, fp_):
         """Reads the existing question provenance
         """
         pass
 
-    def check_ontology(self):
+    def _check_ontology(self):
         """
         Checks the ontology associated with the question
 
         To be added!
-        """
-        pass
-
-    def check_required(self):
-        """Checks whether or not the question is a required question
-
-        To be added!
-        """
-        pass
-
-    def check_missing(self):
-        """Checks whether the missing values are appropriate
-
-        To be added!
-
         """
         pass
