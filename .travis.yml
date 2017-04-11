@@ -14,7 +14,7 @@ before_install:
   - export PATH=/home/travis/miniconda3/bin:$PATH
   # Update conda itself
   - conda update --yes conda
-intall:
+install:
   - conda create --yes -n env_name python=$PYTHON_VERSION --file conda_requirements.txt
   - source activate env_name
   - conda info --envs
