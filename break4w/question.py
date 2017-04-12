@@ -92,8 +92,10 @@ class Question:
         self.qiita_required = qiita_required
         if missing is None:
             self.missing = self.ebi_null
+        elif isinstance(missing, str):
+            self.missing = set([missing])
         else:
-            self.missing = missing
+            self.missing = set(missing)
 
         self.log = []
 

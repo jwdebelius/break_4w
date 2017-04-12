@@ -47,32 +47,48 @@ class QuestionTest(TestCase):
 
     def test_init_error_name(self):
         with self.assertRaises(TypeError):
-            self.q = Question(name=1,
-                              description=self.description,
-                              dtype=self.dtype,
-                              )
+            Question(name=1,
+                     description=self.description,
+                     dtype=self.dtype,
+                     )
 
     def test_init_error_description(self):
         with self.assertRaises(TypeError):
-            self.q = Question(name=self.name,
-                              description=self.dtype,
-                              dtype=self.dtype,
-                              )
+            Question(name=self.name,
+                     description=self.dtype,
+                     dtype=self.dtype,
+                     )
 
     def test_init_error_dtype(self):
         with self.assertRaises(TypeError):
-            self.q = Question(name=self.name,
-                              description=self.description,
-                              dtype=self.description,
-                              )
+            Question(name=self.name,
+                     description=self.description,
+                     dtype=self.description,
+                     )
 
     def test_init_error_clean_name(self):
         with self.assertRaises(TypeError):
-            self.q = Question(name=self.name,
-                              description=self.description,
-                              dtype=self.dtype,
-                              clean_name=self.dtype
-                              )
+            Question(name=self.name,
+                     description=self.description,
+                     dtype=self.dtype,
+                     clean_name=self.dtype
+                     )
+
+    def test_init_clean_name_missing_str(self):
+        q = Question(name=self.name,
+                     description=self.description,
+                     dtype=self.dtype,
+                     clean_name='Player',
+                     missing='Bitty')
+        self.assertEqual(q.clean_name, 'Player')
+        self.assertEqual(q.missing, set(['Bitty']))
+
+    def test_init_missing_list(self):
+        q = Question(name=self.name,
+                     description=self.description,
+                     dtype=self.dtype,
+                     missing=['Bitty'])
+        self.assertEqual(q.missing, set(['Bitty']))
 
     def test_update_log(self):
         self.assertEqual(len(self.q.log), 0)
