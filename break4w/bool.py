@@ -1,4 +1,3 @@
-import numpy as np
 import pandas as pd
 
 from break4w.categorical import Categorical
@@ -7,8 +6,7 @@ from break4w.categorical import Categorical
 class Bool(Categorical):
     def __init__(self, name, description, clean_name=None, bool_format=None,
                  ambiguous_values=None, mimarks=False, ontology=None,
-                 ebi_required=False, qiita_required=False,
-                 missing=None):
+                 missing=None, blanks=None, colormap=None):
         """A question object for boolean question
 
         Parameters
@@ -29,10 +27,23 @@ class Bool(Categorical):
             to answer the question. (For instance, in response to a question
             like, "Are you pregnant?", the participant may not yet known but
             may suspect it.)
-        mimmarks : bool, optional
-            If the question was a mimmarks standard field
+        mimarks : bool, optional
+            If the question was a mimarks standard field
         ontology : str, optional
-            The type of ontology, if any, which was used in the field value.
+            The type of ontology, if any, used to answer the question. An
+            ontology provides a consistent, structured vocabulary. A list
+            of ontologies can be found at https://www.ebi.ac.uk/ols/ontologies
+        missing : str, list, optional
+            Acceptable missing values. Missing values will be used to validate
+            all values in the column. Specified missing values can also be
+            ignored during analysis if correctly specified.
+        blanks: str, list, optional
+            Value to represent experimental blanks, if relevent.
+        colormap: str, iterable, optional
+            The colors to use when plotting the data. This can be a matplotlib
+            colormap object, a string describing a matplotlib compatable
+            colormap (i.e. `'RdBu'`), or an iterable of matplotlib compatable
+            color values.
 
         """
 
@@ -49,7 +60,8 @@ class Bool(Categorical):
             adj_order = [t_format, f_format]
 
 
-        Categorical.__init__(self, name=name,
+        Categorical.__init__(self,
+                             name=name,
                              description=description,
                              dtype=bool,
                              order=adj_order,
@@ -58,9 +70,9 @@ class Bool(Categorical):
                              ambiguous_values=ambiguous_values,
                              mimarks=mimarks,
                              ontology=ontology,
-                             ebi_required=ebi_required,
-                             qiita_required=qiita_required,
-                             missing=missing
+                             missing=missing,
+                             blanks=blanks,
+                             colormap=colormap,
                              )
         self.type = 'Bool'
 

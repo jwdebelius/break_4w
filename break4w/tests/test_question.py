@@ -37,12 +37,12 @@ class QuestionTest(TestCase):
         self.assertTrue(self.q.free_response)
         self.assertFalse(self.q.mimarks)
         self.assertFalse(self.q.ontology)
-        self.assertFalse(self.q.ebi_required)
-        self.assertFalse(self.q.qiita_required)
         self.assertEqual(self.q.missing,
                          {'not applicable', 'missing: not provided',
                           'missing: not collected', 'missing: restricted',
                           'not provided', 'not collected', 'restricted'})
+        self.assertEqual(self.q.colormap, None)
+        self.assertEqual(self.q.blanks, None)
         self.assertEqual(self.q.log, [])
 
     def test_init_error_name(self):
@@ -171,7 +171,7 @@ class QuestionTest(TestCase):
                                           name='player_name'),
                                 self.map_['player_name'])
 
-    def test_write_providence(self):
+    def test_write_provenance(self):
         known_log = pd.DataFrame(
             np.array([[datetime.datetime.now(), 'team_captain',
                        'Cast data type', 'transformation', 'to bool'],
@@ -186,7 +186,7 @@ class QuestionTest(TestCase):
                      dtype=bool
                      )
         q.analysis_remap_dtype(self.map_)
-        log_ = q.write_providence()
+        log_ = q.write_provenance()
         self.assertEqual(known_log.shape, log_.shape)
         pdt.assert_index_equal(known_log.columns, log_.columns)
         pdt.assert_series_equal(known_log['column'], log_['column'])

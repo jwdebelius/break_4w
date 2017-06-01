@@ -90,7 +90,8 @@ class Categorical(Question):
                           mimarks=mimarks,
                           ontology=ontology,
                           missing=missing,
-                          blanks=blanks
+                          blanks=blanks,
+                          colormap=colormap,
                           )
 
         self.type = 'Categorical'

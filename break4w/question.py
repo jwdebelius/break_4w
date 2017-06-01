@@ -20,8 +20,7 @@ class Question:
 
     def __init__(self, name, description, dtype, clean_name=None,
                  free_response=False, mimarks=False, ontology=None,
-                 ebi_required=False, qiita_required=False, missing=None,
-                 blanks=None, colormap=None):
+                 missing=None, blanks=None, colormap=None):
         u"""A base object for describing single question outputs
 
         The Question Object is somewhat limited in its functionality. For most
@@ -48,14 +47,9 @@ class Question:
         mimarks : bool, optional
             If the question was a mimarks standard field
         ontology : str, optional
-            The type of ontology, if any, used to answer the question. For
-            instance, a question describing location might use the Gazeteer
-            ontology (), or locations on the body might be described with the 
-            Uberon ontology ().
-        ebi_required : bool, optional
-            Is the question required for EBI submission. ()
-        qiita_required : bool, optional
-            Is the question required for making the study public in Qiita. ()
+            The type of ontology, if any, used to answer the question. An
+            ontology provides a consistent, structured vocabulary. A list
+            of ontologies can be found at https://www.ebi.ac.uk/ols/ontologies
         missing : str, list, optional
             Acceptable missing values. Missing values will be used to validate
             all values in the column. Specified missing values can also be
@@ -106,8 +100,6 @@ class Question:
         self.free_response = free_response
         self.mimarks = mimarks
         self.ontology = ontology
-        self.ebi_required = ebi_required
-        self.qiita_required = qiita_required
         if missing is None:
             self.missing = self.ebi_null
         elif isinstance(missing, str):
