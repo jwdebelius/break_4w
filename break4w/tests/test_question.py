@@ -164,6 +164,13 @@ class QuestionTest(TestCase):
         npt.assert_array_equal(np.array([2, 4, 4]),
                                self.map_['years_on_team'].values)
 
+    def test_analysis_mask_missing(self):
+        self.q.missing = {'Bitty'}
+        self.q.analysis_mask_missing(self.map_)
+        pdt.assert_series_equal(pd.Series([np.nan, 'Ransom', 'Holster'],
+                                          name='player_name'),
+                                self.map_['player_name'])
+
     def test_write_providence(self):
         known_log = pd.DataFrame(
             np.array([[datetime.datetime.now(), 'team_captain',
