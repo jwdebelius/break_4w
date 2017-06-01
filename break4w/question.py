@@ -6,7 +6,8 @@ import pandas as pd
 
 
 class Question:
-    """A base object class for handling American Gut Data dictionary entries"""
+    u"""A base object class for handling American Gut Data dictionary entries
+    """
     true_values = {'yes', 'true', 1, 1.0, True}
     false_values = {'no', 'false', 0, 0.0, False}
     ebi_null = {'not applicable',
@@ -19,37 +20,53 @@ class Question:
 
     def __init__(self, name, description, dtype, clean_name=None,
                  free_response=False, mimarks=False, ontology=None,
-                 ebi_required=False, qiita_required=False, missing=None):
-        """A base object for describing single question outputs
+                 ebi_required=False, qiita_required=False, missing=None,
+                 blanks=None, colormap=None):
+        u"""A base object for describing single question outputs
 
         The Question Object is somewhat limited in its functionality. For most
         questions in the dataset, it is better to use a child object with the
-        appropriate question type.
+        appropriate question type (i.e. Categorical, Bool, Continous, Dates).
 
         Parameters
         ----------
         name : str
-            The name of column where the group is stored
+            The name of a column in a microbiome mapping file where metadata
+            describing a clincial or enviromental factor is stored.
         description : str
-            A brief description of the data contained in the question
+            A brief description of the biological relevance of the information
+            in the column. This can also be used to clarify acronyms or
+            definations.
         dtype : object
             The datatype in which the responses should be represented. (i.e.
-            float, int, str).
+            `float`, `int`, `str`).
         clean_name : str, optional
-            A nicer version of the way the column should be named.
-        free_response: bool, optional
-            Whether the question is a free response question or controlled
-            vocabulary
+            A nicer version of the way the column should be named. This can be
+            used for display in figures. If nothing is provided, the column
+            name will be coverted to a title by replacing an underscores with
+            spaces and converting to title case.
         mimarks : bool, optional
             If the question was a mimarks standard field
         ontology : str, optional
-            The type of ontology, if any, which was used in the field value.
+            The type of ontology, if any, used to answer the question. For
+            instance, a question describing location might use the Gazeteer
+            ontology (), or locations on the body might be described with the 
+            Uberon ontology ().
         ebi_required : bool, optional
-            Describes whether the question is required by EBI
+            Is the question required for EBI submission. ()
         qiita_required : bool, optional
-            Is the question required by qiita
+            Is the question required for making the study public in Qiita. ()
         missing : str, list, optional
-            Acceptable missing values
+            Acceptable missing values. Missing values will be used to validate
+            all values in the column. Specified missing values can also be
+            ignored during analysis if correctly specified.
+        blanks: str, list, optional
+            Value to represent experimental blanks, if relevent.
+        colormap: str, iterable, optional
+            The colors to use when plotting the data. This can be a matplotlib
+            colormap object, a string describing a matplotlib compatable
+            colormap (i.e. `'RdBu'`), or an iterable of matplotlib compatable
+            color values.
 
         Raises
         ------
@@ -61,9 +78,10 @@ class Question:
             The dtype is not a class
         TypeError
             The `clean_name` is not a string.
+
         """
 
-        # Checks the arguments
+        # Checks the core arguments
         if not isinstance(name, str):
             raise TypeError('name must be a string.')
         if not isinstance(description, str):
@@ -96,11 +114,33 @@ class Question:
             self.missing = set([missing])
         else:
             self.missing = set(missing)
+        self.blanks = blanks
+        self.colormap = colormap
 
         self.log = []
 
     def _update_log(self, command, transform_type, transformation):
-        """Updates the in-object documentation"""
+        u"""A helper function to update the in-object documentation object
+
+        Every time a Question acts on data, a record should be made of
+        the transformation. This function standardized the format of that
+        recording by tracking the time, location, and command.
+        Examples of how the function is used can be found in all functions
+        which operate on a `map_` variable.
+
+        Parameters
+        ----------
+        command : str
+            A short textual description of the command performed. This
+            may be the function name in text format.
+        transform_type: str
+            A more general description of the type of action that was
+            performed. Ideally, this comes for a preset list of possible
+            actions, and the descriptions are consistent.
+        transformation: str
+            Explains exactly how values were changed.
+
+        """
         self.log.append({
             'timestamp': datetime.datetime.now(),
             'column': self.name,
@@ -110,19 +150,24 @@ class Question:
             })
 
     def check_map(self, map_):
-        """Checks the group exists in the metadata
+        """Checks the question column exists in the metadata object
 
         Parameters
         ----------
         map_ : DataFrame
-            A pandas object containing the data to be analyzed. The
-            Question `name` should be a column in the `map_`.
+            A pandas object containing the metadata being analyzed. The
+            `name` parameter of the question object must be a column in
+            `map_`.
 
         Raises
         ------
         ValueError
             If the column identified by the question object is not part of the
             supplied DataFrame.
+
+        Notes
+        -----
+        It may be more appropriate to move this command outside the object
 
         """
         if self.name not in map_.columns:
@@ -132,22 +177,21 @@ class Question:
                              % self.name)
 
     def analysis_remap_dtype(self, map_):
-        """Makes sure the target column in map_ has the correct datatype
+        """Converts values in the question column to the correct datatype
 
         Parameters
         ----------
         map_ : DataFrame
-            A pandas dataframe containing the column described by the question
-            name.
+            A pandas DataFrame containing the metadata being analyzed. The
+            question object describes a column within the `map_`.
 
         Raises
         ------
-        ValueError
-            If the column identified by the question object is not part of the
-            supplied DataFrame.
+        TypeError
+            The question is assumed to be a Boolean, but the value cannot
+            be cast to a boolean value.
 
         """
-        self.check_map(map_)
         if self.dtype == bool:
             def convert_dtype(x):
                 if pd.isnull(x):
@@ -186,8 +230,28 @@ class Question:
         type_str = type_str.replace("<class ", "").replace(">", "")
         self._update_log('Cast data type', 'transformation', type_str)
 
-    def write_providence(self):
-        """Writes the question provinence to a string
+    def analysis_mask_missing(self, map_):
+        """Remaps known missing values with pandas friendly nans
+
+        Parameters
+        ----------
+        map_ : DataFrame
+            A pandas DataFrame containing the metadata being analyzed. The
+            question object describes a column within the `map_`.
+        """
+
+        def remap_(x):
+            if x in self.missing:
+                return np.nan
+            else:
+                return x
+
+        map_[self.name] = map_[self.name].apply(remap_)
+        self._update_log("Mask missing values", "replace", '%s > np.nan'
+                         % ';'.join(list(self.missing)))
+
+    def write_provenance(self):
+        """Writes the question provenance to a string
 
         Returns
         -------
@@ -199,7 +263,7 @@ class Question:
         return pd.DataFrame(self.log)[['timestamp', 'column', 'command',
                                        'transform_type', 'transformation']]
 
-    def _read_providence(self, fp_):
+    def _read_provenance(self, fp_):
         """Reads the existing question provenance
         """
         pass
