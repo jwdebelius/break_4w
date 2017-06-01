@@ -7,7 +7,7 @@ class Continous(Question):
 
     def __init__(self, name, description, dtype=None, unit=None, limits=None,
                  rounding=None, clean_name=None, mimarks=False, ontology=None,
-                 ebi_required=False, qiita_required=False, missing=None):
+                 missing=None, blanks=None, colormap=None):
         """A Question object with continous responses
 
         Parameters
@@ -24,17 +24,26 @@ class Continous(Question):
         rounding : int, optional
             The number of digits to which results should be rounded.
         clean_name : str, optional
-            A nicer version of the way the column should be named.
+            A nicer version of the way the column should be named. This can be
+            used for display in figures. If nothing is provided, the column
+            name will be coverted to a title by replacing an underscores with
+            spaces and converting to title case.
         mimarks : bool, optional
             If the question was a mimarks standard field
         ontology : str, optional
-            The type of ontology, if any, which was used in the field value.
-        ebi_required : bool, optional
-            Describes whether the question is required by EBI
-        qiita_required : bool, optional
-            Is the question req,uired by qiita
+            The type of ontology, if any, used to answer the question. An
+            ontology provides a consistent, structured vocabulary. A list
+            of ontologies can be found at https://www.ebi.ac.uk/ols/ontologies
         missing : str, list, optional
-            Acceptable missing values
+            Acceptable missing values. Missing values will be used to validate
+            all values in the column. Specified missing values can also be
+            ignored during analysis if correctly specified.
+        blanks: str, list, optional
+            Value to represent experimental blanks, if relevent.
+        colormap: str, iterable, optional
+            The colors to use when plotting the data. This can be a matplotlib
+            colormap object or a string describing a matplotlib compatable
+            colormap (i.e. `'RdBu'`).
 
         Raises
         ------
@@ -51,12 +60,11 @@ class Continous(Question):
                           description=description,
                           dtype=dtype,
                           clean_name=clean_name,
-                          free_response=False,
                           mimarks=mimarks,
                           ontology=ontology,
-                          qiita_required=qiita_required,
-                          ebi_required=ebi_required,
-                          missing=missing
+                          missing=missing,
+                          blanks=blanks,
+                          colormap=colormap,
                           )
         self.unit = unit
         if limits is not None:
@@ -73,7 +81,8 @@ class Continous(Question):
         self.rounding = rounding
 
     def analysis_drop_outliers(self, map_):
-        """Removes datapoints outside of the default limits.
+        """
+        Removes datapoints outside of the specified limits
 
         Parameters
         ----------
