@@ -11,43 +11,75 @@ class Categorical(Question):
     def __init__(self, name, description, dtype, order, extremes=None,
                  frequency_cutoff=None, ambiguous_values=None,
                  clean_name=None, mimarks=False, ontology=None,
-                 ebi_required=False, qiita_required=False,
-                 missing=None):
-        """A question object for categorical or ordinal questions
+                 missing=None, blanks=None, colormap=None):
+        r"""A question object for categorical or ordinal questions
 
         Parameters
         ----------
         name : str
-            The name of column where the group is stored
-        descrip tion : str
-            A brief description of the data contained in the question
-        dtype : object
-            The datatype in which the responses should be represented. (i.e.
-            float, int, str).
+            The name of a column in a microbiome mapping file where metadata
+            describing a clincial or enviromental factor is stored.
+        description : str
+            A brief description of the biological relevance of the information
+            in the column. This can also be used to clarify acronyms or
+            definations.
+        dtype : {str, bool, int, float, tuple}
+            The datatype in which the responses should be represented.
         order : list
-            The list of responses to the question
+            The list of all possible responses to the question which may be
+            used for analysis. Ambigious responses (i.e. "I don't know") can
+            be supplied in `ambiguous_values`; missing values are given in
+            `missing`, and experimental blanks in `blanks`.
+            In ordinal variables, this dictates the expected order for the
+            values, even if they  do not map to a clear order in a string.
+            (i.e. "Infant", "Toddler", "Preschooler", "Child") have a clear
+            order, but do not map nicely into a well known order.
         clean_name : str, optional
-            A nicer version of the way the column should be named.
+            A nicer version of the way the column should be named. This can be
+            used for display in figures. If nothing is provided, the column
+            name will be coverted to a title by replacing an underscores with
+            spaces and converting to title case.
         frequency_cutoff : float, optional
-            The minimum number of observations required to keep a sample group.
-        ambigigous_values : str, list, optional
-            A list of values which are considered ambiguous and removed when
-            `drop_ambiguous` is `True`.
-        free_response: bool, optional
-            Whether the question is a free response question or controlled
-            vocabulary
-        mimmarks : bool, optional
-            If the question was a mimmarks standard field
+            The minimum number of observations required to keep a sample group
+            in an analysis. For example, if a value is only represented twice
+            in a question, that value may not be appropriate for most
+            standard statistical tests.
+        ambiguous_values : str, list, optional
+            A list of values which are considered ambiguous responses.
+            For example, a response of "Not Sure" might be valid and useful to
+            maintain for validation, but should be ignored during analysis.
+            The ambigious values can be cast to null values using the
+            `analyis_remove_ambiguious` function.
+        mimarks : bool, optional
+            If the question was a mimarks standard field
         ontology : str, optional
-            The type of ontology, if any, which was used in the field value.
-        ebi_required : bool, optional
-            Describes whether the question is required by EBI
-        qiita_required : bool, optional
-            Is the question required by qiita
+            The type of ontology, if any, used to answer the question. An
+            ontology provides a consistent, structured vocabulary. A list
+            of ontologies can be found at https://www.ebi.ac.uk/ols/ontologies
         missing : str, list, optional
-            Acceptable missing values
+            Acceptable missing values. Missing values will be used to validate
+            all values in the column. Specified missing values can also be
+            ignored during analysis if correctly specified.
+        blanks: str, list, optional
+            Value to represent experimental blanks, if relevent.
+        colormap: str, iterable, optional
+            The colors to use when plotting the data. This can be a matplotlib
+            colormap object, a string describing a matplotlib compatable
+            colormap (i.e. `'RdBu'`), or an iterable of matplotlib compatable
+            color values.
 
+        Raises
+        ------
+        TypeError
+            The name is not a string
+        TypeError
+            The description is not a string
+        TypeError
+            The dtype is not a str, bool, int, float, or tuple Python class.
+        TypeError
+            The `clean_name` is not a string.
         """
+
         if dtype not in {str, bool, int, float, tuple}:
             raise ValueError('%s is not a supported datatype for a '
                              'categorical variable.' % dtype)
@@ -55,12 +87,10 @@ class Categorical(Question):
         # Initializes the question
         Question.__init__(self, name, description, dtype,
                           clean_name=clean_name,
-                          free_response=False,
                           mimarks=mimarks,
                           ontology=ontology,
-                          ebi_required=False,
-                          qiita_required=False,
-                          missing=None,
+                          missing=missing,
+                          blanks=blanks
                           )
 
         self.type = 'Categorical'
@@ -101,7 +131,8 @@ class Categorical(Question):
         self.extremes = [remap_(e) for e in self.extremes]
 
     def analyis_remove_ambiguious(self, map_):
-        """Removes ambiguous groups from the mapping file
+        """
+        Replaces ambigious values in the metadata with nulls
 
         Parameters
         ----------
@@ -127,7 +158,8 @@ class Categorical(Question):
                          self.ambiguous_values)
 
     def analysis_drop_infrequent(self, map_):
-        """Removes groups below a frequency cutoff
+        """
+        Replaces any value from a group below the frequency cutoff with null
 
         Parameters
         ----------
@@ -154,7 +186,8 @@ class Categorical(Question):
         self._update_log('drop infrequent values', 'drop', below)
 
     def analysis_convert_to_numeric(self, map_):
-        """Converts the data to integer values
+        """
+        Converts the values in each group into integers based on `order`
 
         Parameters
         ----------
