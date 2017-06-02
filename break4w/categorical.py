@@ -142,7 +142,6 @@ class Categorical(Question):
             Question `name` should be a column in the `map_`.
 
         """
-        self.check_map(map_)
 
         def _remap(x):
             if pd.isnull(x) or (x is None):
@@ -169,7 +168,6 @@ class Categorical(Question):
             Question `name` should be a column in the `map_`.
 
         """
-        self.check_map(map_)
 
         counts = map_.groupby(self.name).count().max(1)[self.order]
         below_locs = (counts <= self.frequency_cutoff) | pd.isnull(counts)
@@ -197,7 +195,6 @@ class Categorical(Question):
             Question `name` should be a column in the `map_`.
 
         """
-        self.check_map(map_)
         order = {g: i for i, g in enumerate(self.order)}
 
         def remap_(x):
@@ -224,7 +221,6 @@ class Categorical(Question):
             Question `name` should be a column in the `map_`.
 
         """
-        self.check_map(map_)
         order = {g: '(%i) %s' % (i, g) for i, g in enumerate(self.order)}
 
         def remap_(x):
@@ -301,13 +297,10 @@ class Categorical(Question):
         Raises
         ------
         ValueError
-            If the column is not in the mapping file
-        ValueError
             If the values in the mapping file are not acceptable values
             for the question (given by order) or acceptable missing values.
 
         """
-        self.check_map(map_)
         acceptable_values = set(self.missing).union(set(self.order))
         actual_values = set(map_[self.name])
 
