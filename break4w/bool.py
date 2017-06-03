@@ -79,9 +79,12 @@ class Bool(Categorical):
     def analysis_convert_to_word(self, map_):
         """Converts boolean values to 'yes' and 'no'
 
-         map_ : DataFrame
-            A pandas dataframe containing the column described by the question
-            name.
+        Parameters
+        ----------
+        map_ : DataFrame
+            A pandas object containing the data to be analyzed. The
+            Question `name` should be a column in the `map_`.
+
         """
         self.check_map(map_)
         self.analysis_remap_dtype(map_)
