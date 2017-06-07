@@ -44,6 +44,21 @@ class QuestionTest(TestCase):
         self.assertEqual(self.q.colormap, None)
         self.assertEqual(self.q.blanks, None)
         self.assertEqual(self.q.log, [])
+        self.assertEqual(self.q.source_columns, [])
+        self.assertEqual(self.q.derivative_columns, [])
+        self.assertEqual(self.q.notes, None)
+        self.assertTrue(isinstance(self.q.other_properties, dict))
+        self.assertEqual(len(self.q.other_properties.keys()), 0)
+
+    def test_init_source_derivative_list(self):
+        q = Question(name=self.name,
+                     description=self.description,
+                     dtype=self.dtype,
+                     source_columns=['SMH'],
+                     derivative_columns=['next_step']
+                     )
+        self.assertEqual(q.source_columns, ['SMH'])
+        self.assertEqual(q.derivative_columns, ['next_step'])
 
     def test_init_error_name(self):
         with self.assertRaises(TypeError):
@@ -155,6 +170,11 @@ class QuestionTest(TestCase):
         npt.assert_array_equal(np.array([False, True, True]),
                                self.map_['team_captain'].values)
 
+    def test_analysis_remap_dtype_bool_error(self):
+        self.q.dtype = bool
+        with self.assertRaises(TypeError):
+            self.q.analysis_remap_dtype(self.map_)
+
     def test_analysis_remap_dtype_int(self):
         q = Question(name='years_on_team',
                      description=('The number of years a player has played '
@@ -195,6 +215,7 @@ class QuestionTest(TestCase):
                                 log_['transform_type'])
         pdt.assert_series_equal(known_log['transformation'],
                                 log_['transformation'])
+
 
 if __name__ == '__main__':
     main()

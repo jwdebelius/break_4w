@@ -20,7 +20,9 @@ class Question:
 
     def __init__(self, name, description, dtype, clean_name=None,
                  free_response=False, mimarks=False, ontology=None,
-                 missing=None, blanks=None, colormap=None):
+                 missing=None, blanks=None, colormap=None, original_name=None,
+                 source_columns=None, derivative_columns=None, notes=None,
+                 **other_properties):
         u"""A base object for describing single question outputs
 
         The Question Object is somewhat limited in its functionality. For most
@@ -61,6 +63,18 @@ class Question:
             colormap object, a string describing a matplotlib compatable
             colormap (i.e. `'RdBu'`), or an iterable of matplotlib compatable
             color values.
+        original_name: str, optional
+            The name of the column in a previous iteration of the metadata
+            (often the version of the metadata provided by the collaborator).
+        source_columns: list, optional
+            Other columns in the mapping file used to create this column.
+        derivative_columns: list, optional
+            Any columns whose data is derived from the data in this column.
+        notes: str, optional
+            Any additional notes about the column, such as information
+            about the data source, manual correction if it happened, etc.
+            Basically any free text information someone should know about
+            the column.
 
         Raises
         ------
@@ -108,6 +122,20 @@ class Question:
             self.missing = set(missing)
         self.blanks = blanks
         self.colormap = colormap
+        self.original_name = original_name
+
+        if source_columns is None:
+            self.source_columns = []
+        else:
+            self.source_columns = source_columns
+
+        if derivative_columns is None:
+            self.derivative_columns = []
+        else:
+            self.derivative_columns = derivative_columns
+
+        self.notes = notes
+        self.other_properties = other_properties
 
         self.log = []
 
@@ -197,6 +225,9 @@ class Question:
 
             if not (set(map_[self.name].dropna()).issubset(
                     self.true_values.union(self.false_values))):
+                self._update_log('Cast data type error', 'error',
+                                 '%s cannot be cast to a bool value.'
+                                 % self.name)
                 raise TypeError('%s cannot be cast to a bool value.'
                                 % self.name)
 
