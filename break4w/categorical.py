@@ -11,7 +11,9 @@ class Categorical(Question):
     def __init__(self, name, description, dtype, order, extremes=None,
                  frequency_cutoff=None, ambiguous_values=None,
                  clean_name=None, mimarks=False, ontology=None,
-                 missing=None, blanks=None, colormap=None):
+                 missing=None, blanks=None, colormap=None,
+                 numeric_mapping=None, source_columns=None,
+                 derivative_columns=None, notes=None, **other_properties):
         r"""A question object for categorical or ordinal questions
 
         Parameters
@@ -67,6 +69,15 @@ class Categorical(Question):
             colormap object, a string describing a matplotlib compatable
             colormap (i.e. `'RdBu'`), or an iterable of matplotlib compatable
             color values.
+        source_columns: list, optional
+            Other columns in the mapping file used to create this column.
+        derivative_columns: list, optional
+            Any columns whose data is derived from the data in this column.
+        notes: str, optional
+            Any additional notes about the column, such as information
+            about the data source, manual correction if it happened, etc.
+            Basically any free text information someone should know about
+            the column.
 
         Raises
         ------
@@ -92,6 +103,10 @@ class Categorical(Question):
                           missing=missing,
                           blanks=blanks,
                           colormap=colormap,
+                          source_columns=source_columns,
+                          derivative_columns=derivative_columns,
+                          notes=notes,
+                          **other_properties
                           )
 
         self.type = 'Categorical'
