@@ -5,10 +5,10 @@ from break4w.question import Question
 
 class Continous(Question):
 
-    def __init__(self, name, description, unit, dtype=float, limits=None,
-        outliers=None, sig_figs=None, clean_name=None,
-        mimarks=False, ontology=None, missing=None, blanks=None,
-        colormap=None):
+    def __init__(self, name, description, units, dtype=float, limits=None,
+                 outliers=None, sig_figs=None, magnitude=1, clean_name=None,
+                 mimarks=False, ontology=None, missing=None, blanks=None,
+                 colormap=None):
         """A Question object with continous responses
 
         Parameters
@@ -17,11 +17,11 @@ class Continous(Question):
             The name of column where the group is stored
         description : str
             A brief description of the data contained in the question
-        unit : str
-            The unit of measure for the data type. Unitless quantities can be
+        units : str
+            The units of measure for the data type. Unitless quantities can be
             denoted with an empty string (`""`; i.e. reporting absorbance
             values from a spectrophotometer). This is required, even if the
-            units are already recorded in the name. Units are awesome; without
+            unitss are already recorded in the name. Units are awesome; without
             them your data becomes absurd and meaningless. Public serivce
             announcement over, back to your reguarly scheduled doc-string.
         dtype : {int, float}
@@ -43,7 +43,7 @@ class Continous(Question):
         sig_figs : int, optional
             The number of signfiicant figures appropriate for the measurement.
             This should be expressed as a decimal (i.e. `sig_figs = 0.1`),
-            specifying the unit of error on the value.
+            specifying the units of error on the value.
         clean_name : str, optional
             A nicer version of the way the column should be named. This can be
             used for display in figures. If nothing is provided, the column
@@ -91,7 +91,7 @@ class Continous(Question):
         o_lower, o_upper = _check_limits(outliers, 'outliers')
         a_lower, a_upper = _check_limits(limits, 'limits')
 
-        self.unit = unit
+        self.units = units
         self.bound_lower = a_lower
         self.bound_upper = a_upper
         self.outlier_lower = o_lower
@@ -116,13 +116,13 @@ class Continous(Question):
         """
         if (self.bound_upper is not None) and (self.bound_lower is not None):
             update_text = ('The values were between %s and %s %s.'
-                           % (self.bound_lower, self.bound_upper, self.unit))
+                           % (self.bound_lower, self.bound_upper, self.units))
         elif self.bound_upper is not None:
             update_text = ('The values were less than or equal to %s %s.'
-                           % (self.bound_upper, self.unit))
+                           % (self.bound_upper, self.units))
         elif self.bound_lower is not None:
             update_text = ('The values were greater than or equal to %s %s.'
-                           % (self.bound_lower, self.unit))
+                           % (self.bound_lower, self.units))
         else:
             update_text = 'There were no limits specified.'
 
@@ -146,15 +146,15 @@ class Continous(Question):
         if lower_issue and upper_issue:
             error = True
             error_string = ('There are values %s and %s %s.'
-                            % (lower_text, upper_text, self.unit))
+                            % (lower_text, upper_text, self.units))
         elif lower_issue:
             error = True
             error_string = ('There are values %s %s.'
-                            % (lower_text, self.unit))
+                            % (lower_text, self.units))
         elif upper_issue:
             error = True
             error_string = ('There are values %s %s.'
-                            % (upper_text, self.unit))
+                            % (upper_text, self.units))
 
         if error:
             self._update_log('Validate the mapping file', 'error',
@@ -246,7 +246,7 @@ class Continous(Question):
         """
         Rounds the continous values to the correct significant figures.
 
-        Significant figures are awesome (along with units). This function
+        Significant figures are awesome (along with unitss). This function
         is designed to help you maintain the correct significant digits
         for the value measured.
 
