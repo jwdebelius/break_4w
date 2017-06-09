@@ -86,7 +86,6 @@ class Bool(Categorical):
             Question `name` should be a column in the `map_`.
 
         """
-        self.check_map(map_)
         self.analysis_remap_dtype(map_)
 
         def remap_(x):
