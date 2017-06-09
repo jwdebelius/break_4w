@@ -9,7 +9,7 @@ import numpy as np
 import numpy.testing as npt
 import pandas.util.testing as pdt
 
-import statsmodels.api as sm
+# import statsmodels.api as sm
 
 from break4w.data_dictionary import DataDictionary
 from break4w.question import Question
@@ -17,7 +17,7 @@ from break4w.categorical import Categorical
 from break4w.bool import Bool
 from break4w.continous import Continous
 
-data_ = pd.DataFrame(sm.datasets.anes96.load().data)
+# data_ = pd.DataFrame(sm.datasets.anes96.load().data)
 
 
 class DictionaryTest(TestCase):
@@ -43,6 +43,7 @@ class DictionaryTest(TestCase):
             {
                 'name': 'team_captain',
                 'description': 'Has the player been given a C or AC?',
+                'missing': 'TBD',
             },
             {
                 'name': 'position',
@@ -279,6 +280,13 @@ class DictionaryTest(TestCase):
         self.map_ = self.map_[['nickname', 'years_on_team',
                                'team_captain', 'position']]
         self.dictionary.validate_question_order(self.map_, check_order=False)
+
+    def test_validate(self):
+        self.dictionary['years_on_team'].validate(self.map_)
+        self.dictionary['team_captain'].validate(self.map_)
+        self.dictionary.validate(self.map_)
+        # self.dictionary.validate(self.map_)
+
 
 if __name__ == '__main__':
     main()
