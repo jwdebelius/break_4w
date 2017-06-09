@@ -22,11 +22,11 @@ class ContinousTest(TestCase):
         self.description = ("How many years the player has been on SMH during "
                             "Bitty's frog year")
         self.dtype = int
-        self.unit = 'years'
+        self.units = 'years'
 
         self.c = Continous(self.name,
                            self.description,
-                           unit=self.unit,
+                           units=self.units,
                            dtype=self.dtype,
                            limits=[1, None],
                            outliers=[None, 5])
@@ -35,9 +35,9 @@ class ContinousTest(TestCase):
         test = Continous(
             name=self.name,
             description=self.description,
-            unit=self.unit
+            units=self.units
             )
-        self.assertEqual(test.unit, self.unit)
+        self.assertEqual(test.units, self.units)
         self.assertEqual('Continous', test.type)
         self.assertEqual(test.dtype, float)
         self.assertEqual(test.bound_lower, None)
@@ -154,50 +154,50 @@ class ContinousTest(TestCase):
         self.assertEqual(self.c.outlier_lower, None)
         self.assertEqual(self.c.outlier_upper, 5.0)
 
-    def test_validate_range_none_pass(self):
+    def test_validate_none_pass(self):
         self.c.bound_upper = None
         self.c.bound_lower = None
-        self.c.validate_range(self.map_)
+        self.c.validate(self.map_)
         self.assertEqual(self.c.log[1]['transformation'],
                          'There were no limits specified.')
 
-    def test_validate_range_lower_pass(self):
-        self.c.validate_range(self.map_)
+    def test_validate_lower_pass(self):
+        self.c.validate(self.map_)
         self.assertEqual(self.c.log[1]['transformation'],
                          'The values were greater than or equal to 1 years.')
 
-    def test_validate_range_lower_error(self):
+    def test_validate_lower_error(self):
         self.c.bound_lower = 2
         with self.assertRaises(ValueError):
-            self.c.validate_range(self.map_)
+            self.c.validate(self.map_)
         self.assertEqual(self.c.log[1]['transformation'],
                          'There are values less than 2 years.')
 
-    def test_validate_range_upper_pass(self):
+    def test_validate_upper_pass(self):
         self.c.bound_upper = 5
         self.c.bound_lower = None
-        self.c.validate_range(self.map_)
+        self.c.validate(self.map_)
         self.assertEqual(self.c.log[1]['transformation'],
                          'The values were less than or equal to 5 years.')
 
-    def test_validate_range_upper_error(self):
+    def test_validate_upper_error(self):
         self.c.bound_upper = 1
         with self.assertRaises(ValueError):
-            self.c.validate_range(self.map_)
+            self.c.validate(self.map_)
         self.assertEqual(self.c.log[1]['transformation'],
                          'There are values greater than 1 years.')
 
-    def test_validate_range_both_pass(self):
+    def test_validate_both_pass(self):
         self.c.bound_upper = 5
-        self.c.validate_range(self.map_)
+        self.c.validate(self.map_)
         self.assertEqual(self.c.log[1]['transformation'],
                          'The values were between 1 and 5 years.')
 
-    def test_validate_range_both_error(self):
+    def test_validate_both_error(self):
         self.c.bound_lower = 2
         self.c.bound_upper = 3
         with self.assertRaises(ValueError):
-            self.c.validate_range(self.map_)
+            self.c.validate(self.map_)
         self.assertEqual(self.c.log[1]['transformation'],
                          'There are values less than 2 and greater than'
                          ' 3 years.')

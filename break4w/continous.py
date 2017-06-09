@@ -6,9 +6,9 @@ from break4w.question import Question
 class Continous(Question):
 
     def __init__(self, name, description, units, dtype=float, limits=None,
-                 outliers=None, sig_figs=None, magnitude=1, clean_name=None,
-                 mimarks=False, ontology=None, missing=None, blanks=None,
-                 colormap=None):
+        outliers=None, sig_figs=None, magnitude=1, clean_name=None,
+        mimarks=False, ontology=None, missing=None, blanks=None,
+        colormap=None):
         """A Question object with continous responses
 
         Parameters
@@ -99,7 +99,7 @@ class Continous(Question):
         self.type = 'Continous'
         self.sig_figs = sig_figs
 
-    def validate_range(self, map_):
+    def validate(self, map_):
         """
         Checks values fall into the acceptable range for this type of data.
 
@@ -280,6 +280,7 @@ class Continous(Question):
         self._update_log('round significant figures', 'correct',
                          'Rounded the data to the nearest %s.'
                          % self.sig_figs)
+
 
 def _check_limits(limits, var_name):
     """
