@@ -258,13 +258,12 @@ class CategoricalTest(TestCase):
                       name='position')
             )
 
-    def test_validate_map_pass(self):
-        self.c.validate_map(self.map_)
+    def test_validate_pass(self):
+        self.c.validate(self.map_[self.name])
 
-    def test_validate_map_fail(self):
-        self.c.name = 'years_on_team'
+    def test_validate_fail(self):
         with self.assertRaises(ValueError):
-            self.c.validate_map(self.map_)
+            self.c.validate(self.map_['years_on_team'])
 
 
 if __name__ == '__main__':

@@ -9,11 +9,11 @@ from break4w.question import Question
 class Categorical(Question):
 
     def __init__(self, name, description, dtype, order, extremes=None,
-                 frequency_cutoff=None, ambiguous_values=None,
-                 clean_name=None, mimarks=False, ontology=None,
-                 missing=None, blanks=None, colormap=None,
-                 numeric_mapping=None, source_columns=None,
-                 derivative_columns=None, notes=None, **other_properties):
+        frequency_cutoff=None, ambiguous_values=None,
+        clean_name=None, mimarks=False, ontology=None,
+        missing=None, blanks=None, colormap=None,
+        numeric_mapping=None, source_columns=None,
+        derivative_columns=None, notes=None, **other_properties):
         r"""A question object for categorical or ordinal questions
 
         Parameters
@@ -226,6 +226,19 @@ class Categorical(Question):
                          ' | '.join(['%s >>> %s' % (g, i)
                                      for (g, i) in order.items()]))
 
+    # def analysis_convert_to_name(self, map_):
+    #     """
+    #     Converts integer group values to string names
+
+    #     Parameters
+    #     ----------
+    #     map_ : DataFrame
+    #         A pandas object containing the data to be analyzed. The
+    #         Question `name` should be a column in the `map_`.
+
+    #     """
+    #     pass
+
     def analysis_label_order(self, map_):
         """Prefixes the data with an ordinal integer
 
@@ -300,14 +313,14 @@ class Categorical(Question):
                                      for value in values])
                          )
 
-    def validate_map(self, map_):
+    def validate(self, column):
         """Checks the values in the mapping file are correct
 
         Parameters
         ----------
-        map_ : DataFrame
-            A pandas object containing the data to be analyzed. The
-            Question `name` should be a column in the `map_`.
+        column : Series
+            A pandas series containing the data to be analyzed. The
+            Question `name` should be the series name
 
         Raises
         ------
@@ -317,7 +330,7 @@ class Categorical(Question):
 
         """
         acceptable_values = set(self.missing).union(set(self.order))
-        actual_values = set(map_[self.name])
+        actual_values = set(column.unique()) - {np.nan}
 
         if not acceptable_values.issuperset(actual_values):
             descriptor = ['\t%s' % v
