@@ -47,8 +47,6 @@ class QuestionTest(TestCase):
         self.assertEqual(self.q.source_columns, [])
         self.assertEqual(self.q.derivative_columns, [])
         self.assertEqual(self.q.notes, None)
-        self.assertTrue(isinstance(self.q.other_properties, dict))
-        self.assertEqual(len(self.q.other_properties.keys()), 0)
 
     def test_init_source_derivative_list(self):
         q = Question(name=self.name,
@@ -125,14 +123,6 @@ class QuestionTest(TestCase):
         self.assertEqual(log_['transformation'],
                          'metaphysical goalie johnson > Bitty')
 
-    def test_check_map_pass(self):
-        self.q.check_map(self.map_)
-
-    def test_check_map_error(self):
-        self.map_.rename(columns={'player_name': 'question'}, inplace=True)
-        with self.assertRaises(ValueError):
-            self.q.check_map(self.map_)
-
     def test_analysis_remap_dtype_bool_str(self):
         q = Question(name='team_captain',
                      description='who is has the C or AC',
@@ -193,11 +183,11 @@ class QuestionTest(TestCase):
 
     def test_write_provenance(self):
         known_log = pd.DataFrame(
-            np.array([[datetime.datetime.now(), 'team_captain',
-                       'Cast data type', 'transformation', 'to bool'],
-                      [datetime.datetime.now(), 'team_captain', 'Write Log',
+            np.array([[datetime.datetime.now(), 'Cast data type',
+                       'team_captain', 'transformation', 'to bool'],
+                      [datetime.datetime.now(), 'Write Log', 'team_captain',
                        'recording', '']]),
-            columns=['timestamp', 'column', 'command', 'transform_type',
+            columns=['timestamp', 'command', 'column',  'transform_type',
                      'transformation']
            )
 

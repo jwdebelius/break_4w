@@ -19,10 +19,10 @@ class Question:
                 'restricted'}
 
     def __init__(self, name, description, dtype, clean_name=None,
-                 free_response=False, mimarks=False, ontology=None,
-                 missing=None, blanks=None, colormap=None, original_name=None,
-                 source_columns=None, derivative_columns=None, notes=None,
-                 **other_properties):
+        free_response=False, mimarks=False, ontology=None,
+        missing=None, blanks=None, colormap=None, original_name=None,
+        source_columns=None, derivative_columns=None, notes=None,
+        **other_properties):
         u"""A base object for describing single question outputs
 
         The Question Object is somewhat limited in its functionality. For most
@@ -135,7 +135,8 @@ class Question:
             self.derivative_columns = derivative_columns
 
         self.notes = notes
-        self.other_properties = other_properties
+        for k, v in other_properties.items():
+            setattr(self, k, v)
 
         self.log = []
 
@@ -168,33 +169,6 @@ class Question:
             'transform_type': transform_type,
             'transformation': transformation,
             })
-
-    def check_map(self, map_):
-        """Checks the question column exists in the metadata object
-
-        Parameters
-        ----------
-        map_ : DataFrame
-            A pandas object containing the metadata being analyzed. The
-            `name` parameter of the question object must be a column in
-            `map_`.
-
-        Raises
-        ------
-        ValueError
-            If the column identified by the question object is not part of the
-            supplied DataFrame.
-
-        Notes
-        -----
-        It may be more appropriate to move this command outside the object
-
-        """
-        if self.name not in map_.columns:
-            self._update_log('column check', 'validation',
-                             'column does not exist!')
-            raise ValueError('%s is not a column in the supplied map!'
-                             % self.name)
 
     def analysis_remap_dtype(self, map_):
         """Converts values in the question column to the correct datatype
@@ -283,7 +257,7 @@ class Question:
             action type, and changes in the data.
         """
         self._update_log('Write Log', 'recording', '')
-        return pd.DataFrame(self.log)[['timestamp', 'column', 'command',
+        return pd.DataFrame(self.log)[['timestamp', 'command', 'column',
                                        'transform_type', 'transformation']]
 
     def _read_provenance(self, fp_):
