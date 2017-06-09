@@ -4,19 +4,24 @@ import inspect
 import numpy as np
 import pandas as pd
 
+true_values = {'yes', 'true', 1, 1.0, True}
+false_values = {'no', 'false', 0, 0.0, False}
+ebi_null = {'not applicable',
+            'missing: not provided',
+            'missing: not collected',
+            'missing: restricted',
+            'not provided',
+            'not collected',
+            'restricted',
+            }
+
 
 class Question:
     u"""A base object class for handling American Gut Data dictionary entries
     """
-    true_values = {'yes', 'true', 1, 1.0, True}
-    false_values = {'no', 'false', 0, 0.0, False}
-    ebi_null = {'not applicable',
-                'missing: not provided',
-                'missing: not collected',
-                'missing: restricted',
-                'not provided',
-                'not collected',
-                'restricted'}
+    true_values = true_values
+    false_values = false_values
+    ebi_null = ebi_null
 
     def __init__(self, name, description, dtype, clean_name=None,
         free_response=False, mimarks=False, ontology=None,
@@ -186,49 +191,30 @@ class Question:
             be cast to a boolean value.
 
         """
-        if self.dtype == bool:
-            def convert_dtype(x):
-                if pd.isnull(x):
-                    return x
-                elif isinstance(x, str):
-                    return x.lower()
-                else:
-                    return x
-
-            map_[self.name] = map_[self.name].apply(convert_dtype)
-
-            if not (set(map_[self.name].dropna()).issubset(
-                    self.true_values.union(self.false_values))):
-                self._update_log('Cast data type error', 'error',
-                                 '%s cannot be cast to a bool value.'
-                                 % self.name)
-                raise TypeError('%s cannot be cast to a bool value.'
-                                % self.name)
-
-            def remap_(x):
-                if pd.isnull(x):
-                    return x
-                if isinstance(x, str) and x.lower() in self.true_values:
-                    return True
-                elif isinstance(x, str) and x.lower() in self.false_values:
-                    return False
-                else:
-                    return bool(x)
-
+        if self.blanks is None:
+            blanks = set([])
+        if hasattr(self, 'ambigious') and self.ambigious is not None:
+            ambigious = self.ambigious
         else:
-            def remap_(x):
-                return self.dtype(x)
+            ambigious = set([])
 
-        map_[self.name] = map_[self.name].apply(remap_)
-        map_.replace('nan', np.nan, inplace=True)
+        placeholders = self.missing.union(blanks).union(ambigious)
 
-        type_str = 'to %s' % self.dtype
-        type_str = type_str.replace("'", "")
-        type_str = type_str.replace("<class ", "").replace(">", "")
-        self._update_log('Cast data type', 'transformation', type_str)
+        (series, message, error) = _remap_dtype(series=map_[self.name],
+                                                dtype=self.dtype,
+                                                placeholders=placeholders,
+                                                true_values=self.true_values,
+                                                false_values=self.false_values,
+                                                loggable=True
+                                                )
+        self._update_log('cast dtype', 'convert', message)
+        if error:
+            raise TypeError(message)
+        return series
 
     def analysis_mask_missing(self, map_):
-        """Remaps known missing values with pandas friendly nans
+        """
+        Remaps known missing values with pandas friendly nans
 
         Parameters
         ----------
@@ -272,3 +258,112 @@ class Question:
         To be added!
         """
         pass
+
+
+def _remap_dtype(series, dtype, placeholders=None, true_values=true_values,
+                 false_values=false_values, loggable=True):
+    """
+    Converts values from strings to the specified data type
+
+    Parameters
+    ----------
+    series : Series
+        The data being cast
+    dtype : object
+        The datatype in which the responses should be represented. (i.e.
+        `float`, `int`, `str`).
+    placeholders : set, optional
+        Acceptable values to be ignored representing either placeholder values
+        such as text for missing values, blanks, or ambigious measurements.
+
+    Returns
+    -------
+    Series
+        The data cast to the appropriate datatype, preserving the placeholder
+        values in the correct format.
+
+    Raises
+    ------
+    TypeError
+        The question is assumed to be a Boolean, but the value cannot
+        be cast to a boolean value.
+
+    """
+    type_str = '%s' % dtype
+    type_str = type_str.replace("'", "")
+    type_str = type_str.replace("<class ", "").replace(">", "")
+
+    if dtype == bool:
+        #  Converts any non-placeholder string values to lowercase
+        if placeholders is not None:
+            def clean_up_strings(x):
+                if isinstance(x, str) and (x not in placeholders):
+                    return x.lower()
+                else:
+                    return x
+
+            def remap_(x):
+                if (x in placeholders) or (pd.isnull(x)):
+                    return x
+                elif x in true_values:
+                    return True
+                elif x in false_values:
+                    return False
+                else:
+                    return 'error'
+        else:
+            def clean_up_strings(x):
+                if isinstance(x, str):
+                    return x.lower()
+                else:
+                    return x
+
+            def remap_(x):
+                if (pd.isnull(x)):
+                    return x
+                elif x in true_values:
+                    return True
+                elif x in false_values:
+                    return False
+                else:
+                    return 'error'
+
+        series = series.apply(clean_up_strings)
+
+    else:
+        # Defines a function to clean up all other datatypes
+        if placeholders is not None:
+            def remap_(x):
+                if (x in placeholders) or pd.isnull(x):
+                    return x
+                else:
+                    try:
+                        return dtype(x)
+                    except:
+                        return 'error'
+        else:
+            def remap_(x):
+                if pd.isnull(x):
+                    return x
+                else:
+                    try:
+                        return dtype(x)
+                    except:
+                        return 'error'
+
+    series = series.apply(remap_)
+
+    error = np.any(series == 'error')
+    message = 'Data was cast to %s' % type_str
+    if error:
+        message = 'Data could not be cast to %s' % type_str
+
+    if loggable:
+        returns = (series, message, error)
+    else:
+        returns = (series, message, error)
+
+    if error and not loggable:
+        raise TypeError(message)
+
+    return returns
