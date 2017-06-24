@@ -200,17 +200,17 @@ class Question:
 
         placeholders = self.missing.union(blanks).union(ambigious)
 
-        (series, message, error) = _remap_dtype(series=map_[self.name],
+        (series, message, error) = _remap_dtype(series=map_[self.name].copy(),
                                                 dtype=self.dtype,
                                                 placeholders=placeholders,
                                                 true_values=self.true_values,
                                                 false_values=self.false_values,
                                                 loggable=True
                                                 )
-        self._update_log('cast dtype', 'convert', message)
+        self._update_log('Cast data type', 'transformation', message)
         if error:
             raise TypeError(message)
-        return series
+        map_[self.name] = series
 
     def analysis_mask_missing(self, map_):
         """
@@ -353,10 +353,11 @@ def _remap_dtype(series, dtype, placeholders=None, true_values=true_values,
 
     series = series.apply(remap_)
 
-    error = np.any(series == 'error')
-    message = 'Data was cast to %s' % type_str
+    error = np.any(series.apply(lambda x: x == 'error'))
+    print(error)
+    message = 'to %s' % type_str
     if error:
-        message = 'Data could not be cast to %s' % type_str
+        message = 'could not be cast to %s' % type_str
 
     if loggable:
         returns = (series, message, error)
