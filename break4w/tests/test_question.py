@@ -7,7 +7,9 @@ import numpy as np
 import numpy.testing as npt
 import pandas.util.testing as pdt
 
-from break4w.question import Question, _remap_dtype
+from break4w.question import (Question,
+                              _identify_remap_function,
+                              )
 
 
 class QuestionTest(TestCase):
@@ -130,23 +132,9 @@ class QuestionTest(TestCase):
                                           name='player_name'),
                                 self.map_['player_name'])
 
-    def test_analysis_remap_dtype_pass(self):
-        known = pd.Series([False, True, True], name='team_captain')
-        q = Question(name='team_captain',
-                     description='Has the player been given a C or AC?',
-                     dtype=bool)
-        q.analysis_remap_dtype(self.map_)
-        pdt.assert_series_equal(known, self.map_['team_captain'])
-        run_log = q.log[0]
-        self.assertEqual(run_log['command'], 'Cast data type')
-        self.assertEqual(run_log['transform_type'], 'transformation')
-        self.assertEqual(run_log['transformation'], 'to bool')
-
     def test_write_provenance(self):
         known_log = pd.DataFrame(
-            np.array([[datetime.datetime.now(), 'Cast data type',
-                       'team_captain', 'transformation', 'to bool'],
-                      [datetime.datetime.now(), 'Write Log', 'team_captain',
+            np.array([[datetime.datetime.now(), 'Write Log', 'team_captain',
                        'recording', '']]),
             columns=['timestamp', 'command', 'column',  'transform_type',
                      'transformation']
@@ -156,7 +144,6 @@ class QuestionTest(TestCase):
                      description='who is has the C or AC',
                      dtype=bool
                      )
-        q.analysis_remap_dtype(self.map_)
         log_ = q.write_provenance()
         self.assertEqual(known_log.shape, log_.shape)
         pdt.assert_index_equal(known_log.columns, log_.columns)
@@ -173,81 +160,58 @@ class QuestionTest(TestCase):
     def test_check_ontology(self):
         self.q._check_ontology()
 
-    def test_remap_type_bool_placeholder(self):
-        in_series = pd.Series(['True', 'true', 1, 'nope',
-                               'False', 'false', 0, 0.0])
+    def test_identify_remap_function_bool_placeholder(self):
+        iseries = pd.Series(['True', 'true', 1, 'nope',
+                             'False', 'false', 0, 0.0])
         # Sets the know values
         kseries = pd.Series([True, True, True, 'nope',
                              False, False, False, False])
-        kmessage = 'to bool'
+        f_ = _identify_remap_function(bool, {'nope'})
+        tseries = iseries.apply(f_)
 
-        # Gets the test values
-        (tseries, tmessage, terror) = _remap_dtype(in_series, bool, {'nope'})
-        self.assertEqual(kmessage, tmessage)
-        self.assertFalse(terror)
         pdt.assert_series_equal(kseries, tseries)
 
-    def test_remap_type_bool_placeholder_error(self):
-        in_series = pd.Series(['True', 'true', 1, 'nope',
-                               'False', 'false', 0, 0.0])
+    def test_identify_remap_function_bool_no_placeholder(self):
+        iseries = pd.Series(['True', 'true', 1, 'nope',
+                             'False', 'false', 0, 0.0])
         # Sets the know values
         kseries = pd.Series([True, True, True, 'error',
                              False, False, False, False])
-        kmessage = 'could not be cast to bool'
 
         # Gets the test values
-        (tseries, tmessage, terror) = _remap_dtype(in_series, bool, {'cool '},
-                                                   )
-        self.assertEqual(kmessage, tmessage)
-        self.assertTrue(terror)
+        f_ = _identify_remap_function(bool, {'cool '})
+        tseries = iseries.apply(f_)
         pdt.assert_series_equal(kseries, tseries)
 
-    def test_remap_type_bool_error_no_placeholder_logging(self):
-        in_series = self.map_['years_on_team']
-        # Sets known values
-        kseries = pd.Series(data=['error', 'error', 'error'],
-                            name='years_on_team')
-        kmessage = 'could not be cast to bool'
-        (tseries, tmessage, terror) = _remap_dtype(in_series, bool)
-        # Checks the function
-        self.assertEqual(kmessage, tmessage)
-        self.assertTrue(terror)
-        pdt.assert_series_equal(kseries, tseries)
-
-    def test_remap_type_str_pass(self):
-        in_series = self.map_['player_name']
-        # Sets the known values
+    def test_remap_type_str_pass_no_placeholder(self):
+        iseries = self.map_['player_name']
         kseries = self.map_['player_name']
-        kmessage = 'to str'
-        (tseries, tmessage, terror) = _remap_dtype(in_series, str)
-        # Checks the function
-        self.assertEqual(kmessage, tmessage)
-        self.assertFalse(terror)
+        f_ = _identify_remap_function(str)
+        tseries = iseries.apply(f_)
         pdt.assert_series_equal(kseries, tseries)
 
     def test_remap_type_int_placeholder(self):
-        in_series = pd.Series(data=['1', '2', '3', 'i dont skate'],
-                              index=['Whiskey', 'Chowder', 'Bitty', 'Lardo'],
-                              name='collegate_hockey_years')
+        iseries = pd.Series(data=['1', '2', '3', 'i dont skate'],
+                            index=['Whiskey', 'Chowder', 'Bitty', 'Lardo'],
+                            name='collegate_hockey_years')
         # Sets the known values
         kseries = pd.Series(data=[1, 2, 3, 'i dont skate'],
                             index=['Whiskey', 'Chowder', 'Bitty', 'Lardo'],
                             name='collegate_hockey_years')
-        kmessage = 'to int'
-        (tseries, tmessage, terror) = _remap_dtype(in_series, int,
-                                                   {'i dont skate'})
-        # Checks the function
-        self.assertEqual(kmessage, tmessage)
-        self.assertFalse(terror)
+        f_ = _identify_remap_function(int, {'i dont skate'})
+        tseries = iseries.apply(f_)
         pdt.assert_series_equal(kseries, tseries)
 
     def test_remap_type_float_log_error(self):
-        in_series = pd.Series(data=['1', '2', '3', 'i dont skate'],
-                              index=['Whiskey', 'Chowder', 'Bitty', 'Lardo'],
-                              name='collegate_hockey_years')
-        # Checks we get an error when logging is False
-        with self.assertRaises(TypeError):
-            _remap_dtype(in_series, float, loggable=False)
+        iseries = pd.Series(data=['1', '2', '3', 'i dont skate'],
+                            index=['Whiskey', 'Chowder', 'Bitty', 'Lardo'],
+                            name='collegate_hockey_years')
+        kseries = pd.Series(data=[1, 2, 3, 'error'],
+                            index=['Whiskey', 'Chowder', 'Bitty', 'Lardo'],
+                            name='collegate_hockey_years')
+        f_ = _identify_remap_function(float)
+        tseries = iseries.apply(f_)
+        pdt.assert_series_equal(kseries, tseries)
 
 if __name__ == '__main__':
     main()
