@@ -5,8 +5,8 @@ from break4w.categorical import Categorical
 
 class Bool(Categorical):
     def __init__(self, name, description, clean_name=None, bool_format=None,
-                 ambiguous_values=None, mimarks=False, ontology=None,
-                 missing=None, blanks=None, colormap=None):
+        ambiguous=None, mimarks=False, ontology=None,
+        missing=None, blanks=None, colormap=None):
         """A question object for boolean question
 
         Parameters
@@ -21,7 +21,7 @@ class Bool(Categorical):
             The format expected for the boolean values. For example, `['True',
             'False']`, `[0, 1]`, `[True, False]`. By default, data is assumed
             to be a lower case text string (`['true', 'false']`).
-        ambigious_values: str, optional
+        ambiguous: str, set, optional
             A value indicating whether the respondant was unsure about the
             response. This is a different value than the participant failing
             to answer the question. (For instance, in response to a question
@@ -54,20 +54,14 @@ class Bool(Categorical):
             t_format = 'true'
             f_format = 'false'
 
-        if ambiguous_values is not None:
-            adj_order = [t_format, f_format, ambiguous_values]
-        else:
-            adj_order = [t_format, f_format]
-
-
         Categorical.__init__(self,
                              name=name,
                              description=description,
                              dtype=bool,
-                             order=adj_order,
+                             order=[t_format, f_format],
                              extremes=[t_format, f_format],
                              clean_name=clean_name,
-                             ambiguous_values=ambiguous_values,
+                             ambiguous=ambiguous,
                              mimarks=mimarks,
                              ontology=ontology,
                              missing=missing,
@@ -86,16 +80,23 @@ class Bool(Categorical):
             Question `name` should be a column in the `map_`.
 
         """
-        self.analysis_remap_dtype(map_)
 
         def remap_(x):
             if pd.isnull(x):
                 return x
-            if x:
+            elif (x in self.ambiguous) and (self.ambiguous is not None):
+                return x
+            if isinstance(x, bool) and x:
                 return 'yes'
-            elif not x:
+            elif isinstance(x, bool) and (not x):
                 return 'no'
+            else:
+                return 'error'
 
-        map_[self.name] = map_[self.name].apply(remap_)
-        self._update_order(remap_)
+        self.analysis_apply_conversion(map_, remap_, None, False)
+
+        if map_[self.name].apply(lambda x: x == 'error').any():
+            self._update_log('convert boolean', 'replace',
+                             'data could not be standardized')
+            raise ValueError('data could not be standardized')
         self._update_log('convert boolean', 'replace', 'standarize to yes/no')

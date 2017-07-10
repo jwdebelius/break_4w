@@ -27,7 +27,7 @@ class BoolTest(TestCase):
             name=self.name,
             description=self.description,
             bool_format=self.bool,
-            ambiguous_values='TBD',
+            ambiguous='TBD',
             )
 
     def test_bool_init_default(self):
@@ -35,30 +35,40 @@ class BoolTest(TestCase):
                  description=self.description,
                  )
         self.assertEqual(b.order, ['true', 'false'])
-        self.assertEqual(b.ambiguous_values, None)
+        self.assertEqual(b.ambiguous, None)
 
-    def test_bool_init_ambigious_and_order(self):
+    def test_bool_init_ambiguous_and_order(self):
         self.assertEqual(self.b.type, 'Bool')
-        self.assertEqual(self.b.order, ['True', 'False', 'TBD'])
-        self.assertEqual(self.b.ambiguous_values, {'TBD'})
+        self.assertEqual(self.b.order, ['True', 'False'])
+        self.assertEqual(self.b.ambiguous, {'TBD'})
 
-    def test_analysis_convert_to_word(self):
-        pdt.assert_series_equal(
-            self.map_['team_captain'],
-            pd.Series(['TBD', 'True', 'True', 'False'],
-                      index=['Bitty', 'Ransom', 'Holster', 'Johnson'],
-                      name='team_captain')
-            )
-        self.b.analyis_remove_ambiguious(self.map_)
+    def test_analysis_convert_to_word_pass(self):
         self.b.analysis_remap_dtype(self.map_)
         self.b.analysis_convert_to_word(self.map_)
 
         pdt.assert_series_equal(
             self.map_['team_captain'],
-            pd.Series([np.nan, 'yes', 'yes', 'no'],
+            pd.Series(['TBD', 'yes', 'yes', 'no'],
                       index=['Bitty', 'Ransom', 'Holster', 'Johnson'],
                       name='team_captain')
             )
+        log_entry = self.b.log[1]
+        self.assertEqual(log_entry['command'], 'convert boolean')
+        self.assertEqual(log_entry['transform_type'], 'replace')
+        self.assertEqual(log_entry['transformation'], 'standarize to yes/no')
+
+    def test_analysis_convert_to_word_fail(self):
+        with self.assertRaises(ValueError):
+            self.b.analysis_convert_to_word(self.map_)
+
+        log_entry = self.b.log[0]
+        self.assertEqual(log_entry['command'], 'convert boolean')
+        self.assertEqual(log_entry['transform_type'], 'replace')
+        self.assertEqual(log_entry['transformation'],
+                         'data could not be standardized')
+
+    def test_validate_pass(self):
+        self.b.validate(self.map_)
 
 if __name__ == '__main__':
     main()
