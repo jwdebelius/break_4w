@@ -9,7 +9,7 @@ from break4w.question import Question, _identify_remap_function
 class Categorical(Question):
 
     def __init__(self, name, description, dtype, order, extremes=None,
-        frequency_cutoff=None, ambiguous_values=None,
+        frequency_cutoff=None, ambiguous=None,
         clean_name=None, mimarks=False, ontology=None,
         missing=None, blanks=None, colormap=None,
         name_mapping=None, source_columns=None,
@@ -30,7 +30,7 @@ class Categorical(Question):
         order : list
             The list of all possible responses to the question which may be
             used for analysis. Ambigious responses (i.e. "I don't know") can
-            be supplied in `ambiguous_values`; missing values are given in
+            be supplied in `ambiguous`; missing values are given in
             `missing`, and experimental blanks in `blanks`.
             In ordinal variables, this dictates the expected order for the
             values, even if they  do not map to a clear order in a string.
@@ -46,12 +46,12 @@ class Categorical(Question):
             in an analysis. For example, if a value is only represented twice
             in a question, that value may not be appropriate for most
             standard statistical tests.
-        ambiguous_values : str, list, optional
+        ambiguous : str, list, optional
             A list of values which are considered ambiguous responses.
             For example, a response of "Not Sure" might be valid and useful to
             maintain for validation, but should be ignored during analysis.
-            The ambigious values can be cast to null values using the
-            `analyis_remove_ambiguious` function.
+            The ambiguous values can be cast to null values using the
+            `analyis_remove_ambiguous` function.
         mimarks : bool, optional
             If the question was a mimarks standard field
         ontology : str, optional
@@ -123,15 +123,14 @@ class Categorical(Question):
             self.extremes = [order[0], order[-1]]
 
         self.frequency_cutoff = frequency_cutoff
-        if isinstance(ambiguous_values, str):
-            self.ambiguous_values = set([ambiguous_values])
-        elif ambiguous_values is None:
-            self.ambiguous_values = None
-        else:
-            self.ambiguous_values = set(ambiguous_values)
-
         self.name_mapping = name_mapping
         self.numeric_mapping = None
+        if ambiguous == None:
+            self.ambiguous = None
+        elif isinstance(ambiguous, str):
+            self.ambiguous = set([ambiguous])
+        else:
+            self.ambiguous = set(ambiguous)
 
     def _update_order(self, remap_):
         """Updates the order and earlier order arguments
@@ -289,12 +288,12 @@ class Categorical(Question):
         # Checks the data type
         if self.blanks is None:
             blanks = set([])
-        if hasattr(self, 'ambigious') and self.ambigious is not None:
-            ambigious = self.ambigious
+        if hasattr(self, 'ambiguous') and self.ambiguous is not None:
+            ambiguous = self.ambiguous
         else:
-            ambigious = set([])
+            ambiguous = set([])
 
-        placeholders = self.missing.union(blanks).union(ambigious)
+        placeholders = self.missing.union(blanks).union(ambiguous)
 
         remap_ = _identify_remap_function(dtype=self.dtype,
                                           placeholders=placeholders,
@@ -338,9 +337,9 @@ class Categorical(Question):
         self._update_log('correct null values', 'drop',
                          ' | '.join(list(self.missing)))
 
-    def analyis_remove_ambiguious(self, map_):
+    def analyis_remove_ambiguous(self, map_):
         """
-        Replaces ambigious values in the metadata with nulls
+        Replaces ambiguous values in the metadata with nulls
 
         Parameters
         ----------
@@ -353,16 +352,16 @@ class Categorical(Question):
         def _remap(x):
             if pd.isnull(x) or (x is None):
                 return np.nan
-            elif x in self.ambiguous_values:
+            elif x in self.ambiguous:
                 return np.nan
             else:
                 return x
 
-        if self.ambiguous_values is not None:
+        if self.ambiguous is not None:
             map_[self.name] = map_[self.name].apply(_remap)
             self._update_order(_remap)
-        self._update_log('remove ambigious values', 'drop',
-                         ' | '.join([v for v in self.ambiguous_values]))
+        self._update_log('remove ambiguous values', 'drop',
+                         ' | '.join([v for v in self.ambiguous]))
 
     def validate(self, map_):
         """Checks the values in the mapping file are correct
@@ -387,12 +386,12 @@ class Categorical(Question):
         # Attempts to remap the data
         if self.blanks is None:
             blanks = set([])
-        if hasattr(self, 'ambigious') and self.ambigious is not None:
-            ambigious = self.ambigious
+        if hasattr(self, 'ambiguous') and self.ambiguous is not None:
+            ambiguous = self.ambiguous
         else:
-            ambigious = set([])
+            ambiguous = set([])
 
-        placeholders = self.missing.union(blanks).union(ambigious)
+        placeholders = self.missing.union(blanks).union(ambiguous)
         f_ = _identify_remap_function(dtype=self.dtype,
                                       placeholders=placeholders,
                                       true_values=self.true_values,

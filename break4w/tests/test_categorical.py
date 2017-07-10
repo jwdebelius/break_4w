@@ -228,14 +228,14 @@ class CategoricalTest(TestCase):
         self.assertEqual(log_['transform_type'], 'drop')
         self.assertEqual(log_['transformation'], 'Striker')
 
-    def test_analysis_remove_ambigious_str(self):
+    def test_analysis_remove_ambiguous_str(self):
         c = Categorical(name='team_captain',
                         description='who has the C or AC',
                         dtype=str,
                         order=['True', 'False'],
-                        ambiguous_values='TBD'
+                        ambiguous='TBD'
                         )
-        c.analyis_remove_ambiguious(self.map_)
+        c.analyis_remove_ambiguous(self.map_)
 
         # Checks the remapping
         pdt.assert_series_equal(
@@ -246,18 +246,18 @@ class CategoricalTest(TestCase):
             )
         self.assertEqual(c.order, ['True', 'False'])
         log_ = c.log[0]
-        self.assertEqual(log_['command'], 'remove ambigious values')
+        self.assertEqual(log_['command'], 'remove ambiguous values')
         self.assertEqual(log_['transform_type'], 'drop')
         self.assertEqual(log_['transformation'], 'TBD')
 
-    def test_analysis_remove_ambigious_list(self):
+    def test_analysis_remove_ambiguous_list(self):
         c = Categorical(name='team_captain',
                         description='who has the C or AC',
                         dtype=str,
                         order=['True', 'False'],
-                        ambiguous_values=['TBD']
+                        ambiguous=['TBD']
                         )
-        c.analyis_remove_ambiguious(self.map_)
+        c.analyis_remove_ambiguous(self.map_)
         # Checks the remapping
         pdt.assert_series_equal(
             self.map_['team_captain'],
@@ -267,16 +267,16 @@ class CategoricalTest(TestCase):
             )
         self.assertEqual(c.order, ['True', 'False'])
         log_ = c.log[0]
-        self.assertEqual(log_['command'], 'remove ambigious values')
+        self.assertEqual(log_['command'], 'remove ambiguous values')
         self.assertEqual(log_['transform_type'], 'drop')
         self.assertEqual(log_['transformation'], 'TBD')
 
-    def test_analysis_remove_ambigious_nan(self):
-        # Sets the ambigious value as goalie
-        self.c.ambiguous_values = {'Goalie'}
+    def test_analysis_remove_ambiguous_nan(self):
+        # Sets the ambiguous value as goalie
+        self.c.ambiguous = {'Goalie'}
         # Drops the striker value
         self.map_.loc['Bitty', 'position'] = np.nan
-        self.c.analyis_remove_ambiguious(self.map_)
+        self.c.analyis_remove_ambiguous(self.map_)
         # Checks the remapping
         pdt.assert_series_equal(
             self.map_['position'],
@@ -286,7 +286,7 @@ class CategoricalTest(TestCase):
             )
         self.assertEqual(self.c.order, ['Striker', 'D-man'])
         log_ = self.c.log[0]
-        self.assertEqual(log_['command'], 'remove ambigious values')
+        self.assertEqual(log_['command'], 'remove ambiguous values')
         self.assertEqual(log_['transform_type'], 'drop')
         self.assertEqual(log_['transformation'], 'Goalie')
 
