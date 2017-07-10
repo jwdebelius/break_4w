@@ -398,6 +398,7 @@ class Categorical(Question):
                                       false_values=self.false_values,
                                       )
         dseries = iseries.apply(f_)
+        new_order = [f_(o) for o in self.order]
 
         if dseries.apply(lambda x: x == 'error').any():
             message = (
@@ -412,7 +413,7 @@ class Categorical(Question):
                 % str(self.dtype).replace("<class '", '').replace("'>", '')
                 )
 
-        acceptable_values = placeholders.union(set(self.order))
+        acceptable_values = placeholders.union(set(new_order))
         actual_values = set(dseries.unique()) - {np.nan}
 
         if not acceptable_values.issuperset(actual_values):
