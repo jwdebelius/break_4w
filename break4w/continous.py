@@ -1,6 +1,7 @@
 import numpy as np
+import pandas as pd
 
-from break4w.question import Question
+from break4w.question import Question, _identify_remap_function
 
 
 class Continous(Question):
@@ -99,71 +100,6 @@ class Continous(Question):
         self.type = 'Continous'
         self.sig_figs = sig_figs
 
-    def validate(self, map_):
-        """
-        Checks values fall into the acceptable range for this type of data.
-
-        Parameters
-        ----------
-        map_ : DataFrame
-            A pandas object containing the data to be analyzed. The
-            Question `name` should be a column in the `map_`.
-
-        Raises
-        ------
-        ValueError
-            If the data in `map_` falls outside the specified limits
-        """
-        if (self.bound_upper is not None) and (self.bound_lower is not None):
-            update_text = ('The values were between %s and %s %s.'
-                           % (self.bound_lower, self.bound_upper, self.units))
-        elif self.bound_upper is not None:
-            update_text = ('The values were less than or equal to %s %s.'
-                           % (self.bound_upper, self.units))
-        elif self.bound_lower is not None:
-            update_text = ('The values were greater than or equal to %s %s.'
-                           % (self.bound_lower, self.units))
-        else:
-            update_text = 'There were no limits specified.'
-
-        self.analysis_remap_dtype(map_)
-        lower_text = ''
-        lower_issue = False
-        if (self.bound_lower is not None):
-            if np.any(map_[self.name] < self.bound_lower):
-                lower_text = ('less than %s' % self.bound_lower)
-                lower_issue = True
-
-        upper_text = ''
-        upper_issue = False
-        if (self.bound_upper is not None):
-            if np.any(map_[self.name] > self.bound_upper):
-                upper_text = ('greater than %s'
-                              % (self.bound_upper))
-                upper_issue = True
-
-        error = False
-        if lower_issue and upper_issue:
-            error = True
-            error_string = ('There are values %s and %s %s.'
-                            % (lower_text, upper_text, self.units))
-        elif lower_issue:
-            error = True
-            error_string = ('There are values %s %s.'
-                            % (lower_text, self.units))
-        elif upper_issue:
-            error = True
-            error_string = ('There are values %s %s.'
-                            % (upper_text, self.units))
-
-        if error:
-            self._update_log('Validate the mapping file', 'error',
-                             error_string)
-            raise ValueError(error_string)
-        else:
-            self._update_log('Validate the mapping file', 'pass',
-                             update_text)
-
     def dictionary_update_outliers(self, outliers):
         """
         Updates the bounds for outliers in the metadata column.
@@ -191,7 +127,7 @@ class Continous(Question):
         self.outlier_lower = lower
         self.outlier_upper = upper
         self._update_log('update outlier values', 'update dictionary',
-                         'The outlier values have been updated as %s > %s'
+                         'Outlier values have been updated: %s > %s '
                          'and %s > %s.' % (ori_lower, lower, ori_upper, upper)
                          )
 
@@ -206,8 +142,6 @@ class Continous(Question):
             Question `name` should be a column in the `map_`.
 
         """
-        self.analysis_remap_dtype(map_)
-
         if ((self.outlier_lower is not None) and
                 (self.outlier_upper is not None)):
             def remap_(x):
@@ -239,8 +173,7 @@ class Continous(Question):
             summary = 'No values dropped'
 
         map_[self.name] = map_[self.name].apply(remap_)
-        self._update_log('drop outliers', 'drop',
-                         summary)
+        self._update_log('drop outliers', 'drop', summary)
 
     def analysis_set_sig_figs(self, map_):
         """
@@ -262,9 +195,9 @@ class Continous(Question):
             If the sig_figs parameter has not been specified.
 
         """
-        self.analysis_remap_dtype(map_)
-
         if self.sig_figs is None:
+            self._update_log('round significant figures', 'correct',
+                             'Rounding must be defined!')
             raise ValueError('Rounding must be defined!')
 
         # if self.dtype is float:
@@ -280,6 +213,133 @@ class Continous(Question):
         self._update_log('round significant figures', 'correct',
                          'Rounded the data to the nearest %s.'
                          % self.sig_figs)
+
+    def analysis_remap_dtype(self, map_):
+        """Converts values in the question column to the correct datatype
+
+        Parameters
+        ----------
+        map_ : DataFrame
+            A pandas DataFrame containing the metadata being analyzed. The
+            question object describes a column within the `map_`.
+
+        Raises
+        ------
+        TypeError
+            The question is assumed to be a Boolean, but the value cannot
+            be cast to a boolean value.
+
+        """
+        if self.blanks is None:
+            blanks = set([])
+
+        placeholders = self.missing.union(blanks)
+
+        remap_ = _identify_remap_function(dtype=self.dtype,
+                                          placeholders=placeholders,
+                                          )
+        iseries = map_[self.name].copy()
+        oseries = iseries.apply(remap_)
+
+        if np.any(oseries.apply(lambda x: x == 'error')):
+            message = (
+                'could not convert to %s'
+                % (str(self.dtype).replace("<class '", '').replace("'>", ''))
+                )
+            self._update_log('transformation', 'cast data type', message)
+            raise TypeError(message)
+
+        map_[self.name] = oseries
+        message = (
+            'convert to %s'
+            % (str(self.dtype).replace("<class '", '').replace("'>", ''))
+            )
+        self._update_log('transformation', 'cast data type', message)
+
+    def validate(self, map_):
+        """
+        Checks values fall into the acceptable range for this type of data.
+
+        Parameters
+        ----------
+        map_ : DataFrame
+            A pandas object containing the data to be analyzed. The
+            Question `name` should be a column in the `map_`.
+
+        Raises
+        ------
+        ValueError
+            If the data in `map_` falls outside the specified limits
+        """
+
+        column = map_[self.name].copy()
+
+        # Defines the text based on the bounding values
+        if (self.bound_upper is not None) and (self.bound_lower is not None):
+            update_text = ('The values were between %s and %s %s.'
+                           % (self.bound_lower, self.bound_upper, self.units))
+        elif self.bound_upper is not None:
+            update_text = ('The values were less than or equal to %s %s.'
+                           % (self.bound_upper, self.units))
+        elif self.bound_lower is not None:
+            update_text = ('The values were greater than or equal to %s %s.'
+                           % (self.bound_lower, self.units))
+        else:
+            update_text = 'There were no limits specified.'
+
+        # Replaces the missing values
+        if self.missing is not None:
+            column.replace({v: np.nan for v in list(self.missing)},
+                           inplace=True)
+        if self.blanks is not None:
+            column.replace({v: np.nan for v in list(self.blanks)},
+                           inplace=True)
+
+        def quick_convert(x):
+            if pd.isnull(x):
+                return x
+            else:
+                return self.dtype(x)
+
+        # Tries to remap the datatype
+        column = column.apply(quick_convert)
+
+        lower_text = ''
+        lower_issue = False
+        if (self.bound_lower is not None):
+            if np.any(column.dropna() < self.bound_lower):
+                lower_text = ('less than %s' % self.bound_lower)
+                lower_issue = True
+
+        upper_text = ''
+        upper_issue = False
+        if (self.bound_upper is not None):
+            if np.any(column.dropna() > self.bound_upper):
+                upper_text = ('greater than %s'
+                              % (self.bound_upper))
+                upper_issue = True
+
+        error = False
+        if lower_issue and upper_issue:
+            error = True
+            error_string = ('There are values %s and %s %s.'
+                            % (lower_text, upper_text, self.units))
+        elif lower_issue:
+            error = True
+            error_string = ('There are values %s %s.'
+                            % (lower_text, self.units))
+        elif upper_issue:
+            error = True
+            error_string = ('There are values %s %s.'
+                            % (upper_text, self.units))
+
+        if error:
+            self._update_log('Validate the mapping file', 'error',
+                             error_string)
+            raise ValueError(error_string)
+        else:
+            self._update_log('Validate the mapping file', 'pass',
+                             update_text)
 
 
 def _check_limits(limits, var_name):
