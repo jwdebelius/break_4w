@@ -50,8 +50,6 @@ class DataDictionary(OrderedDict):
                               record=False,
                               check=False)
 
-        self._update_log('initialize the dictionary')
-
     def _update_log(self, command, column=None,
         transform_type=None, transformation=None):
         """Used for internal tracking of the columns and data
@@ -83,6 +81,10 @@ class DataDictionary(OrderedDict):
             'transform_type': transform_type,
             'transformation': transformation,
             })
+
+    def _pull_question_log(self, column=None):
+        """Adds information from the specified column to the log."""
+        pass
 
     def add_question(self, question_data, question_type=None,
         check=True, record=True):
@@ -249,7 +251,7 @@ class DataDictionary(OrderedDict):
             transformation=' | '.join(['%s : %s > %s' % (k, v[0], v[1])
                                        for k, v in change_keys.items()]))
 
-    def validate_map(self, map_, check_order=True):
+    def validate(self, map_, check_order=True):
         """
         Checks columns appear in the mapping file in the appropriate order
         and conform to the standards set in the data dictionary.
@@ -263,19 +265,31 @@ class DataDictionary(OrderedDict):
             to match?
         """
         pass_ = True
-        failures = {}
+        failures = []
+        validation_messages = []
         self.validate_question_order(map_, check_order)
         for name, question in self.items():
+            if question.type == 'Question':
+                continue
             try:
-                question.validate(map_[name])
+                question.validate(map_)
             except:
                 pass_ = False
                 failures.append(name)
-        if not pass_
-            
+            if question.type in {'Categorical', 'Bool'}:
+                validation_messages.append(question.log[-2])
+            validation_messages.append(question.log[-1])
 
-
-        
+        # self.log.extend(validation_messages)
+        # if pass_:
+        #     self._update_log('validate', transform_type='pass',
+        #                      transformation='All columns passed')
+        # else:
+        #     message = ('There were issues with the following columns:\n%s'
+        #                % '\n'.join(failures))
+        #     self._update_log('validate', transform_type='error',
+        #                      transformation=message)
+        #     raise ValueError(message)
 
     def validate_question_order(self, map_, check_order=True, record=True,
         verbose=False):
@@ -330,7 +344,7 @@ class DataDictionary(OrderedDict):
                        ' the same order.')
 
         if record:
-            self._update_log(command='Check columns',
+            self._update_log(command='validate', transform_type='pass',
                              transformation=message)
         if not pass_:
             raise ValueError(message)
