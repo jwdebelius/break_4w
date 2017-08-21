@@ -408,9 +408,9 @@ class Categorical(Question):
             self._update_log('validate', 'error', message)
             raise TypeError(message)
         else:
-            message.append(
-                'Data can be cast to %s'
-                % str(self.dtype).replace("<class '", '').replace("'>", '')
+            self._update_log(
+                'validate', 'pass', 'the data can be cast to %s'
+                % (str(self.dtype).replace("<class '", '').replace("'>", ''))
                 )
 
         acceptable_values = placeholders.union(set(new_order))
@@ -425,6 +425,4 @@ class Categorical(Question):
             self._update_log('validate', 'error', '\n'.join(message))
             raise ValueError(m_)
         else:
-            message.append('All values in the column were valid.')
-
-        self._update_log('validate', 'pass', '\n'.join(message))
+            self._update_log('validate', 'pass', 'all values were valid')

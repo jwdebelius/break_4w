@@ -300,15 +300,25 @@ class CategoricalTest(TestCase):
         self.assertEqual(log_entry['transformation'],
                          'the data cannot be cast to bool')
 
-    def test_validate_fail(self):
-        self.c.name = 'years_on_team'
-        with self.assertRaises(ValueError):
+    def test_validate_fail_dtype(self):
+        self.c.dtype = int
+        with self.assertRaises(TypeError):
             self.c.validate(self.map_)
         log_entry = self.c.log[0]
         self.assertEqual(log_entry['command'], 'validate')
         self.assertEqual(log_entry['transform_type'], 'error')
         self.assertEqual(log_entry['transformation'],
-                         'Data can be cast to str\n'
+                         'the data cannot be cast to int'
+                         )
+
+    def test_validate_fail_values(self):
+        self.c.name = 'years_on_team'
+        with self.assertRaises(ValueError):
+            self.c.validate(self.map_)
+        log_entry = self.c.log[1]
+        self.assertEqual(log_entry['command'], 'validate')
+        self.assertEqual(log_entry['transform_type'], 'error')
+        self.assertEqual(log_entry['transformation'],
                          'The following are not valid values: 1 | 2 | 4'
                          )
 
@@ -318,8 +328,13 @@ class CategoricalTest(TestCase):
         self.assertEqual(log_entry['command'], 'validate')
         self.assertEqual(log_entry['transform_type'], 'pass')
         self.assertEqual(log_entry['transformation'],
-                         'Data can be cast to str\n'
-                         'All values in the column were valid.'
+                         'the data can be cast to str'
+                         )
+        log_entry2 = self.c.log[1]
+        self.assertEqual(log_entry2['command'], 'validate')
+        self.assertEqual(log_entry2['transform_type'], 'pass')
+        self.assertEqual(log_entry2['transformation'],
+                         'all values were valid'
                          )
 
 if __name__ == '__main__':
