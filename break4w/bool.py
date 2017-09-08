@@ -100,3 +100,4 @@ class Bool(Categorical):
                              'data could not be standardized')
             raise ValueError('data could not be standardized')
         self._update_log('convert boolean', 'replace', 'standarize to yes/no')
+
