@@ -272,7 +272,45 @@ class Continous(Question):
             If the data in `map_` falls outside the specified limits
         """
 
-        column = map_[self.name].copy()
+        iseries = map_[self.name].copy()
+        message = []
+
+        # Attempts to remap the data
+        if self.blanks is None:
+            blanks = set([])
+        elif isinstance(self.blanks, str):
+            blanks = set([self.blanks])
+        else:
+            blanks = set(self.blanks)
+
+        if hasattr(self, 'ambiguous') and self.ambiguous is not None:
+            if isinstance(self.ambiguous, str):
+                ambiguous = set([self.ambiguous])
+            else:
+                ambiguous = set(self.ambiguous)
+        else:
+            ambiguous = set([])
+
+        placeholders = self.missing.union(blanks).union(ambiguous)
+        f_ = _identify_remap_function(dtype=self.dtype,
+                                      placeholders=placeholders,
+                                      true_values=self.true_values,
+                                      false_values=self.false_values,
+                                      )
+        iseries = iseries.apply(f_)
+        if np.any(iseries.apply(lambda x: x == 'error')):
+            message = (
+                'the data cannot be cast to %s'
+                % (str(self.dtype).replace("<class '", '').replace("'>", ''))
+                )
+            self._update_log('validate', 'error', message)
+            raise TypeError(message)
+        else:
+            self._update_log(
+                'validate', 'pass', 'the data can be cast to %s'
+                % (str(self.dtype).replace("<class '", '').replace("'>", '')))
+
+        iseries = iseries.replace(list(placeholders), np.nan).dropna()
 
         # Defines the text based on the bounding values
         if (self.bound_upper is not None) and (self.bound_lower is not None):
@@ -285,36 +323,19 @@ class Continous(Question):
             update_text = ('The values were greater than or equal to %s %s.'
                            % (self.bound_lower, self.units))
         else:
-            update_text = 'There were no limits specified.'
-
-        # Replaces the missing values
-        if self.missing is not None:
-            column.replace({v: np.nan for v in list(self.missing)},
-                           inplace=True)
-        if self.blanks is not None:
-            column.replace({v: np.nan for v in list(self.blanks)},
-                           inplace=True)
-
-        def quick_convert(x):
-            if pd.isnull(x):
-                return x
-            else:
-                return self.dtype(x)
-
-        # Tries to remap the datatype
-        column = column.apply(quick_convert)
+            update_text = 'there were no limits specified'
 
         lower_text = ''
         lower_issue = False
         if (self.bound_lower is not None):
-            if np.any(column.dropna() < self.bound_lower):
+            if np.any(iseries < self.bound_lower):
                 lower_text = ('less than %s' % self.bound_lower)
                 lower_issue = True
 
         upper_text = ''
         upper_issue = False
         if (self.bound_upper is not None):
-            if np.any(column.dropna() > self.bound_upper):
+            if np.any(iseries > self.bound_upper):
                 upper_text = ('greater than %s'
                               % (self.bound_upper))
                 upper_issue = True
@@ -334,11 +355,11 @@ class Continous(Question):
                             % (upper_text, self.units))
 
         if error:
-            self._update_log('Validate the mapping file', 'error',
+            self._update_log('validate', 'error',
                              error_string)
             raise ValueError(error_string)
         else:
-            self._update_log('Validate the mapping file', 'pass',
+            self._update_log('validate', 'pass',
                              update_text)
 
 

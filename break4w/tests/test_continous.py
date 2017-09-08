@@ -185,65 +185,123 @@ class ContinousTest(TestCase):
         self.assertEqual(log_['transformation'],
                          'Rounded the data to the nearest 0.1.')
 
-    def test_validate_no_lim_pass(self):
+    def test_validate_fail_dtype(self):
+        self.c.name = 'position'
+        with self.assertRaises(TypeError):
+            self.c.validate(self.map_)
+        self.assertEqual(len(self.c.log), 1)
+        log_ = self.c.log[0]
+        self.assertEqual(log_['command'], 'validate')
+        self.assertEqual(log_['transform_type'], 'error')
+        self.assertEqual(log_['transformation'],
+                         'the data cannot be cast to int')
+
+    def test_validate_no_lim_no_blank_no_ambigious_pass(self):
         self.c.bound_upper = None
         self.c.bound_lower = None
+        self.c.blanks = None
         self.c.validate(self.map_)
-        self.assertEqual(self.c.log[0]['transformation'],
-                         'There were no limits specified.')
+        self.assertEqual(len(self.c.log), 2)
 
-    def test_validate_no_lim_pass_missing(self):
-        self.c.missing = ['missing']
-        self.map_.loc['Ransom', 'years_on_team'] = 'missing'
-        self.c.validate(self.map_)
-        self.assertEqual(self.c.log[0]['transformation'],
-                         'The values were greater than or equal to 1 years.')
+        log0 = self.c.log[0]
+        self.assertEqual(log0['command'], 'validate')
+        self.assertEqual(log0['transform_type'], 'pass')
+        self.assertEqual(log0['transformation'],
+                         'the data can be cast to int')
 
-    def test_validate_no_lim_pass_blanks(self):
+        log1 = self.c.log[1]
+        self.assertEqual(log1['command'], 'validate')
+        self.assertEqual(log1['transform_type'], 'pass')
+        self.assertEqual(log1['transformation'],
+                         'there were no limits specified')
+
+    def test_validate_lower_pass_blank_list_ambigious_list(self):
         self.c.blanks = ['missing']
+        self.c.ambiguous = ['test']
         self.map_.loc['Ransom', 'years_on_team'] = 'missing'
         self.c.validate(self.map_)
-        self.assertEqual(self.c.log[0]['transformation'],
+        self.assertEqual(len(self.c.log), 2)
+
+        log0 = self.c.log[0]
+        self.assertEqual(log0['command'], 'validate')
+        self.assertEqual(log0['transform_type'], 'pass')
+        self.assertEqual(log0['transformation'],
+                         'the data can be cast to int')
+
+        log1 = self.c.log[1]
+        self.assertEqual(log1['command'], 'validate')
+        self.assertEqual(log1['transform_type'], 'pass')
+        self.assertEqual(log1['transformation'],
                          'The values were greater than or equal to 1 years.')
 
-    def test_validate_lower_pass(self):
+    def test_validate_greater_pass_blank_str_ambigious_str(self):
+        self.c.blanks = 'missing'
+        self.c.test = 'test'
+        self.c.bound_upper = 5
+        self.c.bound_lower = None
+        self.map_.loc['Ransom', 'years_on_team'] = 'missing'
         self.c.validate(self.map_)
-        self.assertEqual(self.c.log[0]['transformation'],
-                         'The values were greater than or equal to 1 years.')
+        self.assertEqual(len(self.c.log), 2)
+
+        log0 = self.c.log[0]
+        self.assertEqual(log0['command'], 'validate')
+        self.assertEqual(log0['transform_type'], 'pass')
+        self.assertEqual(log0['transformation'],
+                         'the data can be cast to int')
+
+        log1 = self.c.log[1]
+        self.assertEqual(log1['command'], 'validate')
+        self.assertEqual(log1['transform_type'], 'pass')
+        self.assertEqual(log1['transformation'],
+                         'The values were less than or equal to 5 years.')
+
+    def test_validate_both_lim(self):
+        self.c.bound_upper = 5
+        self.c.validate(self.map_)
+        self.assertEqual(len(self.c.log), 2)
+
+        log1 = self.c.log[1]
+        self.assertEqual(log1['command'], 'validate')
+        self.assertEqual(log1['transform_type'], 'pass')
+        self.assertEqual(log1['transformation'],
+                         'The values were between 1 and 5 years.')
 
     def test_validate_lower_error(self):
         self.c.bound_lower = 2
         with self.assertRaises(ValueError):
             self.c.validate(self.map_)
-        self.assertEqual(self.c.log[0]['transformation'],
+        self.assertEqual(len(self.c.log), 2)
+
+        log1 = self.c.log[1]
+        self.assertEqual(log1['command'], 'validate')
+        self.assertEqual(log1['transform_type'], 'error')
+        self.assertEqual(log1['transformation'],
                          'There are values less than 2 years.')
 
-    def test_validate_upper_pass(self):
-        self.c.bound_upper = 5
-        self.c.bound_lower = None
-        self.c.validate(self.map_)
-        self.assertEqual(self.c.log[0]['transformation'],
-                         'The values were less than or equal to 5 years.')
-
     def test_validate_upper_error(self):
-        self.c.bound_upper = 1
+        self.c.bound_upper = 3
         with self.assertRaises(ValueError):
             self.c.validate(self.map_)
-        self.assertEqual(self.c.log[0]['transformation'],
-                         'There are values greater than 1 years.')
+        self.assertEqual(len(self.c.log), 2)
 
-    def test_validate_both_pass(self):
-        self.c.bound_upper = 5
-        self.c.validate(self.map_)
-        self.assertEqual(self.c.log[0]['transformation'],
-                         'The values were between 1 and 5 years.')
+        log1 = self.c.log[1]
+        self.assertEqual(log1['command'], 'validate')
+        self.assertEqual(log1['transform_type'], 'error')
+        self.assertEqual(log1['transformation'],
+                         'There are values greater than 3 years.')
 
     def test_validate_both_error(self):
         self.c.bound_lower = 2
         self.c.bound_upper = 3
         with self.assertRaises(ValueError):
             self.c.validate(self.map_)
-        self.assertEqual(self.c.log[0]['transformation'],
+
+        self.assertEqual(len(self.c.log), 2)
+
+        log1 = self.c.log[1]
+        self.assertEqual(log1['command'], 'validate')
+        self.assertEqual(log1['transform_type'], 'error')
+        self.assertEqual(log1['transformation'],
                          'There are values less than 2 and greater than'
                          ' 3 years.')
 
