@@ -222,9 +222,8 @@ class Question:
         """
         pass
 
-
 def _identify_remap_function(dtype, placeholders=None, true_values=true_values,
-                             false_values=false_values):
+    false_values=false_values):
     """Selects an appropriate function to convert data from str to dtype
 
     Parameters

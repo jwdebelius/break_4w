@@ -43,12 +43,13 @@ class BoolTest(TestCase):
         self.assertEqual(self.b.ambiguous, {'TBD'})
 
     def test_analysis_convert_to_word_pass(self):
+        self.map_.loc['Holster', 'team_captain'] = np.nan
         self.b.analysis_remap_dtype(self.map_)
         self.b.analysis_convert_to_word(self.map_)
 
         pdt.assert_series_equal(
             self.map_['team_captain'],
-            pd.Series(['TBD', 'yes', 'yes', 'no'],
+            pd.Series(['TBD', 'yes', np.nan, 'no'],
                       index=['Bitty', 'Ransom', 'Holster', 'Johnson'],
                       name='team_captain')
             )

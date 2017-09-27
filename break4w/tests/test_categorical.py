@@ -95,7 +95,7 @@ class CategoricalTest(TestCase):
                          'Goalie >>> Defense')
 
     def test_analysis_apply_conversion_dict_no_log(self):
-        kseries = pd.Series(data=['Not yet', 'AC', 'AC', np.nan],
+        kseries = pd.Series(data=['Not yet', 'AC', 'AC', 'False'],
                             index=['Bitty', 'Ransom', 'Holster', 'Johnson'],
                             name='team_captain'
                             )
@@ -105,12 +105,11 @@ class CategoricalTest(TestCase):
                         dtype=bool,
                         )
         mapping = {'TBD': 'Not yet',
-                   'True': 'AC',
-                   'False': np.nan}
+                   'True': 'AC'}
 
         c.analysis_apply_conversion(self.map_, mapping, None, False)
         pdt.assert_series_equal(self.map_['team_captain'], kseries)
-        self.assertEqual(c.order, ['AC', 'Not yet'])
+        self.assertEqual(c.order, ['AC', 'False', 'Not yet'])
         self.assertEqual(len(c.log), 0)
 
     def test_analysis_convert_to_label(self):
@@ -145,6 +144,9 @@ class CategoricalTest(TestCase):
                          {'Freshman': 1, 'Sophomore': 2,
                           'Junior': 3, 'Senior': 4}
                          )
+
+    def test_analysis_convert_to_label_error(self):
+        self.assert
 
     def test_analysis_convert_to_numeric(self):
         self.assertEqual(self.c.name_mapping, None)

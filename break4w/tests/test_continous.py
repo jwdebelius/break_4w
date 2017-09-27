@@ -236,6 +236,7 @@ class ContinousTest(TestCase):
 
     def test_validate_greater_pass_blank_str_ambigious_str(self):
         self.c.blanks = 'missing'
+        self.c.ambiguous = 'missing'
         self.c.test = 'test'
         self.c.bound_upper = 5
         self.c.bound_lower = None

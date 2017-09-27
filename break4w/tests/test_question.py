@@ -55,10 +55,13 @@ class QuestionTest(TestCase):
                      description=self.description,
                      dtype=self.dtype,
                      source_columns=['SMH'],
-                     derivative_columns=['next_step']
+                     derivative_columns=['next_step'],
+                     school='Samwell',
                      )
         self.assertEqual(q.source_columns, ['SMH'])
         self.assertEqual(q.derivative_columns, ['next_step'])
+        self.assertTrue(hasattr(q, 'school'))
+        self.assertEqual(q.school, 'Samwell')
 
     def test_init_error_name(self):
         with self.assertRaises(TypeError):
