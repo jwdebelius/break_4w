@@ -143,6 +143,7 @@ class Categorical(Question):
 
         order = copy.copy(self.order)
         self.order = []
+        print(self.order)
         for o in order:
             new_o = remap_(o)
             if new_o not in self.order and not pd.isnull(new_o):
@@ -204,8 +205,6 @@ class Categorical(Question):
         def remap_(x):
             if x in self.name_mapping:
                 return self.name_mapping[x]
-            elif x in self.name_mapping.values():
-                return x
             else:
                 return np.nan
 

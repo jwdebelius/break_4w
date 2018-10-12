@@ -145,8 +145,43 @@ class CategoricalTest(TestCase):
                           'Junior': 3, 'Senior': 4}
                          )
 
+    def test_analysis_convert_to_label(self):
+        name_mapping = {1: 'Freshman',
+                        2: 'Sophomore',
+                        3: 'Junior',
+                        4: 'Senior'}
+        c = Categorical(name='years_on_team',
+                        description="Time in SMH in Bitty's frog year",
+                        order=['1', '2', '3', '4'],
+                        dtype=int,
+                        name_mapping=name_mapping,
+                        )
+        kseries = pd.Series(['Freshman', 'Sophomore', 'Sophomore', np.nan],
+                            index=['Bitty', 'Ransom', 'Holster', 'Johnson'],
+                            name='years_on_team')
+
+        c.analysis_remap_dtype(self.map_)
+        c.name_mapping = {1: 'Freshman',
+                          2: 'Sophomore'}
+        c.analysis_convert_to_label(self.map_)
+
+        self.assertEqual(c.order, ['Freshman', 'Sophomore'])
+        pdt.assert_series_equal(self.map_['years_on_team'], kseries)
+
+        log_ = c.log[1]
+        self.assertEqual(log_['command'], 'transformation')
+        self.assertEqual(log_['transform_type'], 'convert code to label')
+        self.assertEqual(log_['transformation'],
+                         '1 >>> Freshman | 2 >>> Sophomore | 3 >>> nan | '
+                         '4 >>> nan')
+        self.assertEqual(c.numeric_mapping,
+                         {'Freshman': 1, 'Sophomore': 2}
+                         )
+
     def test_analysis_convert_to_label_error(self):
-        self.assert
+        self.assertEqual(self.c.name_mapping, None)
+        with self.assertRaises(ValueError):
+            self.c.analysis_convert_to_label(self.map_)
 
     def test_analysis_convert_to_numeric(self):
         self.assertEqual(self.c.name_mapping, None)
