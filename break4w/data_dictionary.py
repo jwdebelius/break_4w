@@ -142,7 +142,7 @@ class DataDictionary(OrderedDict):
             message = '%s was added to the dictionary' % name
             transform_type = None
 
-        # Updates thd log
+        # Updates the log
         if record:
             self._update_log('add column', column=name, transformation=message,
                              transform_type=transform_type)
@@ -214,6 +214,7 @@ class DataDictionary(OrderedDict):
             The name of the dictionary column to be returned. If `update` is
             a Question object, this can be infered from the question.
         """
+        
         # Gets the dictionary of the new column and column name
         if isinstance(update, Question):
             update = vars(update)
