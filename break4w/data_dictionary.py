@@ -20,7 +20,7 @@ type_lookup = {'continous': Continous,
 
 
 class DataDictionary(OrderedDict):
-    def __init__(self, columns, types):
+    def __init__(self, columns, types, description=None):
         """Initializes the dictionary object
 
         This is a very basic prototype of the data dictionary object
@@ -28,20 +28,27 @@ class DataDictionary(OrderedDict):
         Parameters
         ----------
         columns: list of dicts
-            A list of dictionaries representing each column in the
-            metadata. The dictionaries must contain a `name` key,
-            describing the column name. The values in the dictionary
-            should the variables needed for each type of question
-            object in a data dictionary.
+            A list of dictionaries representing each column in the metadata. 
+            The dictionaries must contain a `name` key, describing the column 
+            name. The values in the dictionary should the variables needed 
+            for each type of question object in a data dictionary.
         types: list of strings
-            A description of the type of question being asked. These
-            come from a relatively controlled vocabulary and include
-            types such as `"continous", "categorical", "bool"`. If
-            the question type does not conform to the controlled
-            vocabulary, the column will be read as a Question object
-            with limited functionality.
+            A description of the type of question being asked. These come 
+            from a relatively controlled vocabulary and include types such as 
+            `"continous", "categorical", "bool"`. If the question type does 
+            not conform to the controlled vocabulary, the column will be 
+            read as a Question object with limited functionality.
+        description: str
+            The 
         """
         self.log = []
+        if description is None:
+            self.description = ''
+        elif len(description) > 80:
+            raise ValueError('The dictionary description cannot be more than '
+                             '80 characters')
+        else:
+            self.description = description
 
         # Adds the question objects to the dictionary
         for col_, type_ in zip(*(columns, types)):
@@ -49,6 +56,22 @@ class DataDictionary(OrderedDict):
                               question_type=type_,
                               record=False,
                               check=False)
+
+    def __str__(self):
+        """
+        Generates printed summary
+        """
+        summary = ['Data Dictionary with %i columns'  % len(self)]
+        if len(self.description) > 0:
+            summary.append('\t%s' % self.description)
+        summary.append('-----------------------------------------------------'
+                       '------------------------')
+                  
+        for col in self.values():
+            summary.append('%s (%s)' % (col.name, col.type))
+        summary.append('-----------------------------------------------------'
+                       '------------------------')
+        return '\n'.join(summary)
 
     def _update_log(self, command, column=None,
         transform_type=None, transformation=None):
@@ -107,10 +130,10 @@ class DataDictionary(OrderedDict):
             no `question_type` is needed.
         check: bool, optional
             Checks whether a name already exists in the question name space.
-            If this is true, then the function will check if the column already
-            exists in the dictionary. If the column does exist and check is
-            true, an error will be raised. If check is not true, the data
-            dictionary entry for the column will be overwritten and any
+            If this is true, then the function will check if the column 
+            already exists in the dictionary. If the column does exist and 
+            check is true, an error will be raised. If check is not true, the
+            data dictionary entry for the column will be overwritten and any
             information in that column will be lost.
         record, bool, optional
             Indicates where the addition should be logged.
@@ -144,7 +167,9 @@ class DataDictionary(OrderedDict):
 
         # Updates the log
         if record:
-            self._update_log('add column', column=name, transformation=message,
+            self._update_log('add column', 
+                             column=name, 
+                             transformation=message,
                              transform_type=transform_type)
 
         # Raises an error or updates the dictionary, as appropriate
@@ -281,16 +306,16 @@ class DataDictionary(OrderedDict):
                 validation_messages.append(question.log[-2])
             validation_messages.append(question.log[-1])
 
-        # self.log.extend(validation_messages)
-        # if pass_:
-        #     self._update_log('validate', transform_type='pass',
-        #                      transformation='All columns passed')
-        # else:
-        #     message = ('There were issues with the following columns:\n%s'
-        #                % '\n'.join(failures))
-        #     self._update_log('validate', transform_type='error',
-        #                      transformation=message)
-        #     raise ValueError(message)
+        self.log.extend(validation_messages)
+        if pass_:
+            self._update_log('validate', transform_type='pass',
+                             transformation='All columns passed')
+        else:
+            message = ('There were issues with the following columns:\n%s'
+                       % '\n'.join(failures))
+            self._update_log('validate', transform_type='error',
+                             transformation=message)
+            raise ValueError(message)
 
     def validate_question_order(self, map_, check_order=True, record=True,
         verbose=False):
@@ -344,38 +369,25 @@ class DataDictionary(OrderedDict):
             message = ('The columns in the dictionary and map are not in'
                        ' the same order.')
 
-        if record:
+        if record and pass_:
             self._update_log(command='validate', transform_type='pass',
                              transformation=message)
-        if not pass_:
+        elif record and not pass_:
+            self._update_log(command='validate', transform_type='fail',
+                             transformation=message)
+            raise ValueError(message)
+        elif not pass_:
             raise ValueError(message)
 
+    def to_dict(self, req_params=None):
+        """Converts data dictionary to dictionary object
 
+        Parameters
+        ----------
+        req_cols: list, optional
+            The 
+        """
+        types = []
+        type_, col_ = zip(*[question.to_dict() for question in self.values()])
+        return list(type_), list(col_)
 
-# class DataDictionary:
-#     """
-#     Some great documentation
-#     """
-
-#     qiita_required = {}
-#     ebi_required = {}
-
-#     def __init__(self, data_dict):
-#         """..."""
-#         self.log = []
-#         pass
-
-#     def _add_question(self, question_series):
-#         """Converts a text question information"""
-#         pass
-
-#     def _drop_question(self, question_name):
-#         pass
-
-#     def _update_log(self):
-#         """..."""
-#         pass
-
-#     def combine_questions(self):
-#         """..."""
-#         pass
