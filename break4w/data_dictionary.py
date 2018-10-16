@@ -293,7 +293,7 @@ class DataDictionary(OrderedDict):
         pass_ = True
         failures = []
         validation_messages = []
-        self.validate_question_order(map_, check_order)
+        self._validate_question_order(map_, check_order)
         for name, question in self.items():
             if question.type == 'Question':
                 continue
@@ -317,7 +317,7 @@ class DataDictionary(OrderedDict):
                              transformation=message)
             raise ValueError(message)
 
-    def validate_question_order(self, map_, check_order=True, record=True,
+    def _validate_question_order(self, map_, check_order=True, record=True,
         verbose=False):
         """
         Checks all the required questions are present in the mapping file
@@ -390,4 +390,12 @@ class DataDictionary(OrderedDict):
         types = []
         type_, col_ = zip(*[question.to_dict() for question in self.values()])
         return list(type_), list(col_)
+
+    def to_dataframe(self):
+        """Converts data dictionary to a pandas dataframe"""
+        df_ = pd.concat(axis=1, sort=False, objs=[
+            col_._to_series() for col_ in self.values()
+            ])
+        return df_.T
+
 

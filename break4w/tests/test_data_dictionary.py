@@ -9,15 +9,11 @@ import numpy as np
 import numpy.testing as npt
 import pandas.util.testing as pdt
 
-# import statsmodels.api as sm
-
 from break4w.data_dictionary import DataDictionary
 from break4w.question import Question
 from break4w.categorical import Categorical
 from break4w.bool import Bool
 from break4w.continous import Continous
-
-# data_ = pd.DataFrame(sm.datasets.anes96.load().data)
 
 
 class DictionaryTest(TestCase):
@@ -266,7 +262,7 @@ class DictionaryTest(TestCase):
             )
 
     def test_validate_question_order_pass(self):
-        self.dictionary.validate_question_order(self.map_)
+        self.dictionary._validate_question_order(self.map_)
         # Checks the log
         self.assertEqual(len(self.dictionary.log), 1)
         log_ = self.dictionary.log[0]
@@ -282,7 +278,7 @@ class DictionaryTest(TestCase):
     def test_validate_question_order_different_cols_error(self):
         self.dictionary.drop_question('nickname')
         with self.assertRaises(ValueError):
-            self.dictionary.validate_question_order(self.map_)
+            self.dictionary._validate_question_order(self.map_)
         self.assertEqual(len(self.dictionary.log), 2)
         log_ = self.dictionary.log[1]
         self.assertEqual(log_['command'], 'validate')
@@ -298,7 +294,7 @@ class DictionaryTest(TestCase):
     def test_validate_question_order_different_cols_error_verbose(self):
         self.dictionary.drop_question('nickname')
         with self.assertRaises(ValueError):
-            self.dictionary.validate_question_order(self.map_, verbose=True)
+            self.dictionary._validate_question_order(self.map_, verbose=True)
         log_ = self.dictionary.log[1]
         self.assertEqual(
             log_['transformation'],
@@ -313,7 +309,7 @@ class DictionaryTest(TestCase):
         self.map_ = self.map_[['nickname', 'years_on_team',
                                'team_captain', 'position']]
         with self.assertRaises(ValueError):
-            self.dictionary.validate_question_order(self.map_, verbose=True)
+            self.dictionary._validate_question_order(self.map_, verbose=True)
         log_ = self.dictionary.log[0]
         self.assertEqual(
             log_['transformation'],
@@ -323,7 +319,7 @@ class DictionaryTest(TestCase):
     def test_validate_question_check_order_pass(self):
         self.map_ = self.map_[['nickname', 'years_on_team',
                                'team_captain', 'position']]
-        self.dictionary.validate_question_order(self.map_, check_order=False)
+        self.dictionary._validate_question_order(self.map_, check_order=False)
         log_ = self.dictionary.log[0]
         self.assertEqual(log_['command'], 'validate')
         self.assertEqual(log_['column'], None)
@@ -338,7 +334,7 @@ class DictionaryTest(TestCase):
         self.map_ = self.map_[['nickname', 'years_on_team',
                                'team_captain', 'position']]
         with self.assertRaises(ValueError):
-            self.dictionary.validate_question_order(self.map_, record=False)
+            self.dictionary._validate_question_order(self.map_, record=False)
         self.assertEqual(len(self.dictionary.log), 0)
 
     def test_validate_pass(self):
@@ -414,6 +410,25 @@ class DictionaryTest(TestCase):
         self.assertEqual(type_, self.types)
         for idx, col in enumerate(col_):
             self.assertEqual(col, known[idx])
+
+    def test_to_dataframe(self):
+        columns = ['years_on_team', 'team_captain', 'position', 'nickname']
+        known = pd.DataFrame(
+            data=[columns,
+                  [c['description'] for c in self.columns],
+                  ['int', 'bool', 'str', 'str'],
+                  ['Continous', 'Bool', 'Categorical', 'Question'],
+                  ['Years On Team', 'Team Captain', 'Position', 'Nickname'],
+                  ['years', np.nan, np.nan, np.nan],
+                  ['1 | None', 'true | false', 'Striker | Goalie', np.nan],
+                  [np.nan, 'TBD', np.nan, np.nan],
+                  [np.nan, 'true | false', 'Striker | D-man | Goalie', np.nan]
+                  ],
+            index=['name', 'description', 'dtype', 'type', 'clean_name', 
+                   'units', 'extremes', 'missing', 'order']).T
+        known.reset_index(inplace=True, drop=True)
+
+        pdt.assert_frame_equal(known, self.dictionary.to_dataframe())
 
 
 if __name__ == '__main__':
