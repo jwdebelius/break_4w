@@ -143,7 +143,6 @@ class Categorical(Question):
 
         order = copy.copy(self.order)
         self.order = []
-        print(self.order)
         for o in order:
             new_o = remap_(o)
             if new_o not in self.order and not pd.isnull(new_o):
