@@ -77,6 +77,19 @@ class QuestionTest(TestCase):
                      dtype=self.dtype,
                      )
 
+    def test_init_error_description_length(self):
+        d = ('Check, Please! is a 2013 webcomic written and '
+             'illustrated by Ngozi Ukazu. The webcomic follows '
+             'vlogger and figure-turned-ice hockey skater Eric '
+             '"Bitty" Bittle as he deals with hockey culture in '
+             'college, as well as his identity as a gay man.')
+
+        with self.assertRaises(ValueError):
+            Question(name=self.name,
+                     description=d,
+                     dtype=self.dtype,
+                     )
+
     def test_init_error_dtype(self):
         with self.assertRaises(TypeError):
             Question(name=self.name,
@@ -107,6 +120,11 @@ class QuestionTest(TestCase):
                      dtype=self.dtype,
                      missing=['Bitty'])
         self.assertEqual(q.missing, set(['Bitty']))
+
+    def test__str__(self):
+        known = '%s (%s)\n\t%s' % (self.name, 'Question', self.description)
+        test = self.q.__str__()
+        self.assertEqual(known, test)
 
     def test_update_log(self):
         self.assertEqual(len(self.q.log), 0)
@@ -158,10 +176,10 @@ class QuestionTest(TestCase):
                                 log_['transformation'])
 
     def test_read_provenance(self):
-        self.q._read_provenance('dogs')
+        pass
 
     def test_check_ontology(self):
-        self.q._check_ontology()
+        pass
 
     def test_identify_remap_function_bool_placeholder(self):
         iseries = pd.Series(['True', 'true', 1, 'nope',
@@ -215,6 +233,28 @@ class QuestionTest(TestCase):
         f_ = _identify_remap_function(float)
         tseries = iseries.apply(f_)
         pdt.assert_series_equal(kseries, tseries)
+
+    def test_to_dict(self):
+        known = {'name': self.name,
+                 'description': self.description,
+                 'dtype': self.dtype,
+                 'free_response': True,
+                 'clean_name': 'Player Name',
+                 }
+        type_, test = self.q.to_dict()
+        self.assertEqual(test, known)
+        self.assertEqual(type_, 'question')
+
+    def test_to_series(self):
+        known = pd.Series({'name': self.name,
+                           'description': self.description,
+                           'dtype': 'str',
+                           'free_response': 'True',
+                           'clean_name': 'Player Name',
+                           'type': 'Question',
+                           })
+        test_ = self.q._to_series()
+        pdt.assert_series_equal(known, test_)
 
 if __name__ == '__main__':
     main()

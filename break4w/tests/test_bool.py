@@ -71,5 +71,20 @@ class BoolTest(TestCase):
     def test_validate_pass(self):
         self.b.validate(self.map_)
 
+    def test_to_dict(self):
+        known = {'name': self.name,
+                 'description': self.description,
+                 'dtype': bool,
+                 'ambiguous': {'TBD'},
+                 'order': self.bool,
+                 'extremes': self.bool,
+                 'clean_name': 'Team Captain',
+                 }
+        type_, test = self.b.to_dict()
+        self.assertEqual(type_, 'bool')
+        self.assertEqual(test, known)
+
+
+
 if __name__ == '__main__':
     main()

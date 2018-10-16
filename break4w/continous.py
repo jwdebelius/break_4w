@@ -362,6 +362,77 @@ class Continous(Question):
             self._update_log('validate', 'pass',
                              update_text)
 
+    def to_dict(self):
+        """Converts the question column to a dictionary
+        """
+        tent_dict = self.__dict__.items()
+
+        def _check_dict(k, v):
+            if k in {'log', 'type', 'bound_lower', 'bound_upper', 
+                     'outlier_lower', 'outlier_upper'}:
+                return False
+            if v is None:
+                return False
+            elif isinstance(v, list) and (len(v) == 0):
+                return False
+            elif ((k in self.defaults) and 
+                (self.defaults[k] == v)):
+                return False
+            else:
+                return True
+
+        summ_dict = {k:v for k, v in tent_dict if _check_dict(k, v)}
+        if ((self.bound_lower is not None) or (self.bound_upper is not None)):
+            summ_dict['limits'] = [self.bound_lower, self.bound_upper]
+
+        if ((self.outlier_lower is not None) or 
+            (self.outlier_upper is not None)):
+            summ_dict['outliers'] = [self.outlier_lower, self.outlier_upper]
+
+        return (self.type.lower(), summ_dict)
+
+    def _to_series(self):
+        """Formats data to be written to tsv"""
+        tent_dict = self.__dict__.items()
+
+        def _check_dict(k, v):
+            if k in {'log', 'bound_lower', 'bound_upper', 
+                     'outlier_lower', 'outlier_upper'}:
+                return False
+            if v is None:
+                return False
+            elif isinstance(v, list) and (len(v) == 0):
+                return False
+            elif ((k in self.defaults) and 
+                (self.defaults[k] == v)):
+                return False
+            else:
+                return True
+
+        def _format_value(v):
+            if isinstance(v, list):
+                return ' | '.join(v)
+            if isinstance(v, (set, tuple)):
+                return ' | '.join(list(v))
+            else:
+                str_ = str(v)
+                str_1 = str_.replace("<class '", '').replace("'>", "")
+                return str_1
+
+        dict_ = {k: _format_value(v) for k, v in tent_dict 
+                 if _check_dict(k, v)}
+
+        if ((self.bound_lower is not None) or (self.bound_upper is not None)):
+            dict_['extremes'] = \
+                ('%s | %s' % (self.bound_lower, self.bound_upper))
+
+        if ((self.outlier_lower is not None) or 
+            (self.outlier_upper is not None)):
+            dict_['ambiguous'] = \
+                ('%s | %s') % (self.outlier_lower, self.outlier_upper)
+
+        return pd.Series(dict_)
+
 
 def _check_limits(limits, var_name):
     """
@@ -377,3 +448,5 @@ def _check_limits(limits, var_name):
         lower, upper = (None, None)
 
     return lower, upper
+
+

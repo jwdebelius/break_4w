@@ -16,12 +16,20 @@ ebi_null = {'not applicable',
             }
 
 
+
 class Question:
     u"""A base object class for handling American Gut Data dictionary entries
     """
     true_values = true_values
     false_values = false_values
     ebi_null = ebi_null
+    defaults = {'missing': ebi_null,
+                'true_values': true_values,
+                'false_values': false_values,
+                'mimarks': False,
+                'free_response': False,
+                'magnitude': 1,
+                }
 
     def __init__(self, name, description, dtype, clean_name=None,
         free_response=False, mimarks=False, ontology=None,
@@ -99,10 +107,14 @@ class Question:
             raise TypeError('name must be a string.')
         if not isinstance(description, str):
             raise TypeError('description must be a string')
+        elif len(description) > 80:
+            raise ValueError('The description must be less than 80 '
+                             'characters')
         if not inspect.isclass(dtype):
             raise TypeError('dtype must be a class')
         if not isinstance(clean_name, str) and clean_name is not None:
             raise TypeError('If supplied, clean_name must be a string')
+
 
         # Handles the main information about the data
         self.name = name
@@ -144,6 +156,11 @@ class Question:
             setattr(self, k, v)
 
         self.log = []
+
+    
+    def __str__(self):
+        u"""Prints a nice summary of the object"""
+        return '%s (%s)\n\t%s' % (self.name, self.type, self.description)
 
     def _update_log(self, command, transform_type, transformation):
         u"""A helper function to update the in-object documentation object
@@ -222,6 +239,60 @@ class Question:
         """
         pass
 
+    def to_dict(self):
+        """Converts the question column to a dictionary
+        """
+        tent_dict = self.__dict__.items()
+
+        def _check_dict(k, v):
+            if k in {'log', 'type'}:
+                return False
+            if v is None:
+                return False
+            elif isinstance(v, list) and (len(v) == 0):
+                return False
+            elif ((k in self.defaults) and 
+                (self.defaults[k] == v)):
+                return False
+            else:
+                return True
+
+        return (self.type.lower(), 
+                {k: v for k, v in tent_dict if _check_dict(k, v)})
+
+
+    def _to_series(self):
+        """Formats data to be written to tsv"""
+        tent_dict = self.__dict__.items()
+
+        def _check_dict(k, v):
+            if k in {'log'}:
+                return False
+            if v is None:
+                return False
+            elif isinstance(v, list) and (len(v) == 0):
+                return False
+            elif ((k in self.defaults) and 
+                (self.defaults[k] == v)):
+                return False
+            else:
+                return True
+
+        def _format_value(v):
+            if isinstance(v, list):
+                return ' | '.join(v)
+            if isinstance(v, (set, tuple)):
+                return ' | '.join(list(v))
+            else:
+                str_ = str(v)
+                str_1 = str_.replace("<class '", '').replace("'>", "")
+                return str_1
+
+        dict_ = {k: _format_value(v) for k, v in tent_dict 
+                 if _check_dict(k, v)}
+
+        return pd.Series(dict_)
+
 def _identify_remap_function(dtype, placeholders=None, true_values=true_values,
     false_values=false_values):
     """Selects an appropriate function to convert data from str to dtype
@@ -278,3 +349,5 @@ def _identify_remap_function(dtype, placeholders=None, true_values=true_values,
                     return 'error'
 
     return remap_
+
+

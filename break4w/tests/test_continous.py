@@ -233,7 +233,7 @@ class ContinousTest(TestCase):
         self.assertEqual(log1['transform_type'], 'pass')
         self.assertEqual(log1['transformation'],
                          'The values were greater than or equal to 1 years.')
-
+x
     def test_validate_greater_pass_blank_str_ambigious_str(self):
         self.c.blanks = 'missing'
         self.c.ambiguous = 'missing'
@@ -334,6 +334,19 @@ class ContinousTest(TestCase):
         limits = [8, 5]
         with self.assertRaises(ValueError):
             _check_limits(limits, 'limits')
+
+    def test_to_dict(self):
+        known = {'name': self.name,
+                 'description': self.description,
+                 'units': self.units,
+                 'dtype': self.dtype,
+                 'limits': [1, None],
+                 'outliers': [None, 5],
+                 'clean_name': 'Years On Team'
+                 }
+        type_, test = self.c.to_dict()
+x        self.assertEqual(test, known)
+        self.assertEqual('continous', type_)
 
 if __name__ == '__main__':
     main()

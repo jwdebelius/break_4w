@@ -374,5 +374,18 @@ class CategoricalTest(TestCase):
                          'all values were valid'
                          )
 
+    def test_to_dict(self):
+        known = {'name': self.name,
+                 'description': self.description,
+                 'dtype': self.dtype,
+                 'order': self.order,
+                 'extremes': self.extremes,
+                 'clean_name': 'Position',
+                 }
+        type_, test = self.c.to_dict()
+
+        self.assertEqual(known.keys(), test.keys())
+        self.assertEqual(type_, 'categorical')
+
 if __name__ == '__main__':
     main()
