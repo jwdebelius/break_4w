@@ -246,12 +246,17 @@ class QuestionTest(TestCase):
         self.assertEqual(type_, 'question')
 
     def test_to_series(self):
+        self.q.order = ['Bitty', 'Ransom', 'Holster']
+        self.q.missing = {'TBD'}
+
         known = pd.Series({'name': self.name,
                            'description': self.description,
                            'dtype': 'str',
                            'free_response': 'True',
                            'clean_name': 'Player Name',
                            'type': 'Question',
+                           'order': 'Bitty | Ransom | Holster',
+                           'missing': "TBD"
                            })
         test_ = self.q._to_series()
         pdt.assert_series_equal(known, test_)
