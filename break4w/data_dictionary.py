@@ -381,6 +381,20 @@ class DataDictionary(OrderedDict):
 
     def to_dataframe(self):
         u"""Converts data dictionary to a pandas dataframe
+
+        Returns
+        -------
+        DataFrame
+            A dataframe summary of the contents of the data dictionary. It
+            will include the following columns:
+                * "name": The name of the variable
+                * "description": A description of the variable of no more than
+                             80 characters
+                * "dtype": a string representation of python data types (i.e 
+                           str, int, bool, etc)
+                * "clean_name": the cleaned up column name
+            It may also contain columns describing the variable order,
+            limits on the data, units, etc.
         """
         df_ = pd.concat(axis=1, sort=False, objs=[
             col_._to_series() for col_ in self.values()

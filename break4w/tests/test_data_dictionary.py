@@ -374,7 +374,6 @@ class DictionaryTest(TestCase):
         self.assertEqual(log_.loc[6, 'transformation'], 
             'There were issues with the following columns:\nyears_on_team')
 
-        },
     def test_to_dataframe(self):
         columns = ['years_on_team', 'team_captain', 'position', 'nickname']
         known = pd.DataFrame(
