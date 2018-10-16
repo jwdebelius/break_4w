@@ -261,5 +261,6 @@ class QuestionTest(TestCase):
         test_ = self.q._to_series()
         pdt.assert_series_equal(known, test_)
 
+
 if __name__ == '__main__':
     main()

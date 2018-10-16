@@ -18,7 +18,7 @@ ebi_null = {'not applicable',
 
 
 class Question:
-    u"""A base object class for handling American Gut Data dictionary entries
+    u"""A base object class for handling Data dictionary entries
     """
     true_values = true_values
     false_values = false_values
@@ -30,6 +30,7 @@ class Question:
                 'free_response': False,
                 'magnitude': 1,
                 }
+    set_params = {'missing', 'ambigious', ''}
 
     def __init__(self, name, description, dtype, clean_name=None,
         free_response=False, mimarks=False, ontology=None,
@@ -292,6 +293,7 @@ class Question:
                  if _check_dict(k, v)}
 
         return pd.Series(dict_)
+
 
 def _identify_remap_function(dtype, placeholders=None, true_values=true_values,
     false_values=false_values):
