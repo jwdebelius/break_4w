@@ -233,7 +233,7 @@ class ContinousTest(TestCase):
         self.assertEqual(log1['transform_type'], 'pass')
         self.assertEqual(log1['transformation'],
                          'The values were greater than or equal to 1 years.')
-x
+
     def test_validate_greater_pass_blank_str_ambigious_str(self):
         self.c.blanks = 'missing'
         self.c.ambiguous = 'missing'
@@ -345,8 +345,26 @@ x
                  'clean_name': 'Years On Team'
                  }
         type_, test = self.c.to_dict()
-x        self.assertEqual(test, known)
+        self.assertEqual(test, known)
         self.assertEqual('continous', type_)
+
+
+    def test_to_series(self):
+        self.c.missing = {"lacross"}
+        self.c.frogs = ['foxtrot', 'whiskey', 'tango']
+        known = pd.Series({'name': self.name,
+                           'description': self.description,
+                           'units': self.units,
+                           'dtype': 'int',
+                           'type': 'Continous',
+                           'extremes': '1 | None',
+                           'ambiguous': 'None | 5',
+                           'missing': 'lacross',
+                           'frogs': 'foxtrot | whiskey | tango',
+                           'clean_name': 'Years On Team'})
+
+        test = self.c._to_series()
+        pdt.assert_series_equal(known, test)
 
 if __name__ == '__main__':
     main()
