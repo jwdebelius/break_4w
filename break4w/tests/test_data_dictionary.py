@@ -374,43 +374,7 @@ class DictionaryTest(TestCase):
         self.assertEqual(log_.loc[6, 'transformation'], 
             'There were issues with the following columns:\nyears_on_team')
 
-    def test_to_dict(self):
-        known = [
-        {'name': 'years_on_team',
-         'description': ("How many years the player has been on SMH "
-                         "during Bitty's frog year"),
-         'dtype': int,
-         'units': 'years',
-         'clean_name': 'Years On Team',
-         'limits': [1, None],
-         },
-        {'name': 'team_captain',
-         'description': 'Has the player been given a C or AC?',
-         'dtype': bool,
-         'missing': {'TBD'},
-         'order': ['true', 'false'],
-         'extremes':  ['true', 'false'],
-         'clean_name': 'Team Captain',
-         },
-        {'name': 'position',
-         'description': 'Where the player can normally be found on the ice',
-         'dtype': str,
-         'order': ["Striker", "D-man", "Goalie"],
-         'extremes': ["Striker", "Goalie"],
-         'clean_name': 'Position',
-         },
-        {'name': 'nickname',
-         'description': "the character's actual first name",
-         'dtype': str,
-         'clean_name': 'Nickname',
         },
-        ]
-
-        type_, col_ = self.dictionary.to_dict()
-        self.assertEqual(type_, self.types)
-        for idx, col in enumerate(col_):
-            self.assertEqual(col, known[idx])
-
     def test_to_dataframe(self):
         columns = ['years_on_team', 'team_captain', 'position', 'nickname']
         known = pd.DataFrame(
@@ -429,6 +393,12 @@ class DictionaryTest(TestCase):
         known.reset_index(inplace=True, drop=True)
 
         pdt.assert_frame_equal(known, self.dictionary.to_dataframe())
+
+    def test_to_pandas_stata(self):
+        known_vars = {x['name']: x['description'] for x in self.columns}
+        test_desc, test_vars = self.dictionary.to_pandas_stata()
+        self.assertEqual(test_desc, self.desc)
+        self.assertEqual(known_vars, test_vars)
 
 
 if __name__ == '__main__':

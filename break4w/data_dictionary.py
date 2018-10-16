@@ -379,23 +379,28 @@ class DataDictionary(OrderedDict):
         elif not pass_:
             raise ValueError(message)
 
-    def to_dict(self, req_params=None):
-        """Converts data dictionary to dictionary object
-
-        Parameters
-        ----------
-        req_cols: list, optional
-            The 
-        """
-        types = []
-        type_, col_ = zip(*[question.to_dict() for question in self.values()])
-        return list(type_), list(col_)
-
     def to_dataframe(self):
-        """Converts data dictionary to a pandas dataframe"""
+        u"""Converts data dictionary to a pandas dataframe
+        """
         df_ = pd.concat(axis=1, sort=False, objs=[
             col_._to_series() for col_ in self.values()
             ])
         return df_.T
 
+    def to_pandas_stata(self):
+        """
+        Generates strings and dictionary compatible with writing to stata
+
+        Returns
+        -------
+        str
+            A stata-compatible dataset description for `pandas.write_stata`
+        dictionary
+            A stata-compatible description for each variable, compatible with
+            `pandas.write_stata`.
+        """
+
+        variable_desc = {k: v.description for k,v in self.items()}
+
+        return self.description, variable_desc
 
