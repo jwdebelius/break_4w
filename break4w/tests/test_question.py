@@ -176,10 +176,12 @@ class QuestionTest(TestCase):
                                 log_['transformation'])
 
     def test_read_provenance(self):
-        pass
+        with self.assertRaises(NotImplementedError):
+            self.q._read_provenance()
 
     def test_check_ontology(self):
-        pass
+        with self.assertRaises(NotImplementedError):
+            self.q._check_ontology()
 
     def test_identify_remap_function_bool_placeholder(self):
         iseries = pd.Series(['True', 'true', 1, 'nope',

@@ -230,7 +230,7 @@ class Question:
     def _read_provenance(self, fp_):
         """Reads the existing question provenance
         """
-        pass
+        raise NotImplementedError
 
     def _check_ontology(self):
         """
@@ -238,7 +238,7 @@ class Question:
 
         To be added!
         """
-        pass
+        raise NotImplementedError
 
     def to_dict(self):
         """Converts the question column to a dictionary
@@ -281,9 +281,10 @@ class Question:
 
         def _format_value(v):
             if isinstance(v, list):
+                return ' | '.join([str(x) for x in v])
                 return ' | '.join(v)
             if isinstance(v, (set, tuple)):
-                return ' | '.join(list(v))
+                return ' | '.join([str(x) for x in v])
             else:
                 str_ = str(v)
                 str_1 = str_.replace("<class '", '').replace("'>", "")
