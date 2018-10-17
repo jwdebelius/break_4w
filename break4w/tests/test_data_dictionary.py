@@ -127,7 +127,8 @@ class DictionaryTest(TestCase):
         self.assertEqual(log_['transformation'], None)
 
     def test_pull_question_log(self):
-        pass
+        with self.assertRaises(NotImplementedError):
+            self.dictionary._pull_question_log()
 
     def test_add_question_default(self):
         # Adds the `years_on_team` question.
@@ -389,7 +390,7 @@ class DictionaryTest(TestCase):
                   ],
             index=['name', 'description', 'dtype', 'type', 'clean_name', 
                    'units', 'extremes', 'missing', 'order']).T
-        known.reset_index(inplace=True, drop=True)
+        known.set_index('name', inplace=True)
 
         pdt.assert_frame_equal(known, self.dictionary.to_dataframe())
 

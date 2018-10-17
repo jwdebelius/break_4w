@@ -107,7 +107,7 @@ class DataDictionary(OrderedDict):
 
     def _pull_question_log(self, column=None):
         """Adds information from the specified column to the log."""
-        pass
+        raise NotImplementedError
 
     def add_question(self, question_data, question_type=None,
         check=True, record=True):
@@ -399,7 +399,7 @@ class DataDictionary(OrderedDict):
         df_ = pd.concat(axis=1, sort=False, objs=[
             col_._to_series() for col_ in self.values()
             ])
-        return df_.T
+        return df_.T.set_index('name')
 
     def to_pandas_stata(self):
         """
