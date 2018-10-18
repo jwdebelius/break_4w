@@ -9,8 +9,8 @@ from break4w.question import Question, _identify_remap_function
 class Categorical(Question):
 
     def __init__(self, name, description, dtype, order, reference_val=None,
-        ambiguous=None, frequency_cutoff=None, name_mapping=None,
-        ordinal=False, **kwargs):
+        ambiguous=None, frequency_cutoff=None, numeric_mapping=None,
+        ordinal=False, code_delim='=' **kwargs):
         u"""
         A question object for categorical or ordinal questions
 
@@ -127,7 +127,18 @@ class Categorical(Question):
 
         if ambiguous == None:
             self.ambiguous = None
-        elif isinstance(ambiguous, str):
+        elif (isinstance(ambiguous, str) and (code_delim in ambiguous) and
+             (var_delimiter in ambiguous)):
+            self.ambiguous = {
+                amb_.split(code_delim)[0]: amb_.split(code_delim)[1]
+                for amb_ in ambiguous.split(var_delimiter)
+                }
+        elif (isinstance(ambiguous, str) and (code_delim in ambiguous)):
+            self.ambiguous = {num_: str_ 
+                         for num_, str_ in ambiguous.split(code_delim)}
+        elif (isinstance(ambiguous, str) and (var_delimiter in ambiguous)):
+            self.ambiguous = set([])
+
             self.ambiguous = set([ambiguous])
         else:
             self.ambiguous = set(ambiguous)

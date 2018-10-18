@@ -432,7 +432,7 @@ class DataDictionary(OrderedDict):
 
         if clean:
             df_ = df_[['name', 'description', 'type', 'dtype', 'order', 
-                       'ambigious', 'missing', 'notes']]
+                       'units', 'ambigious', 'missing', 'notes']]
             df_.drop(columns=df.columns[df_.isna().all(axis=0)], inplace=True)
 
         return df_.set_index('name')

@@ -201,8 +201,6 @@ class Question:
         if (code_delim in str_):
             return {int(amb_.split(code_delim)[0]): amb_.split(code_delim)[1]
                     for amb_ in str_.split(var_delim)}
-        # elif (code_delim in str_):
-        #     return {int(num_): val_ for num_, val_ in str_.split(code_delim)}
         elif (var_delim in str_):
             return [val_ for val_ in str_.split(var_delim)]
         else:

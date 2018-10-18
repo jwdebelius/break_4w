@@ -433,7 +433,32 @@ class DictionaryTest(TestCase):
         pdt.assert_frame_equal(known, test)
 
     def test_to_dataframe_clean(self):
-        pass
+        self.dictionary['nickname'].numeric_mapping = {1: 'Bitty', 
+                                                       2: 'Ransom', 
+                                                       3: 'Holster'}
+
+
+        columns = ['years_on_team', 'team_captain', 'position', 'nickname']
+        known = pd.DataFrame(
+            data=[columns,
+                  [c['description'] for c in self.columns],
+                  ['int', 'bool', 'str', 'str'],
+                  ['Continous', 'Bool', 'Categorical', 'Question'],
+                  ['Years On Team', 'Team Captain', 'Position', 'Nickname'],
+                  ['years', np.nan, np.nan, np.nan],
+                  [np.nan, 'true | false', 'Striker | Goalie', np.nan],
+                  [np.nan, 'TBD', np.nan, np.nan],
+                  ['1 | None', 'true | false', 'Striker | D-man | Goalie', 
+                   '1=Bitty | 2=Ransom | 3=Holster'],
+                  ],
+            index=['name', 'description', 'dtype', 'type', 'clean_name', 
+                   'units', 'extremes', 'missing', 'order']
+            ).T
+        known.set_index('name', inplace=True)
+        known = known[['description', 'dtype', 'type', 'clean_name', 'units', 
+                       'order', 'missing', 'extremes']]
+        test = self.dictionary.to_dataframe(True, True)
+        pdt.assert_frame_equal(known, test)
 
     def test_to_pandas_stata(self):
         known_vars = {x['name']: x['description'] for x in self.columns}
