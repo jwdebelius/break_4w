@@ -8,7 +8,7 @@ import numpy.testing as npt
 import pandas.util.testing as pdt
 
 from break4w.question import (Question,
-                              _identify_remap_function,
+                              # _identify_remap_function,
                               )
 
 
@@ -177,7 +177,7 @@ class QuestionTest(TestCase):
 
     def test_read_provenance(self):
         with self.assertRaises(NotImplementedError):
-            self.q._read_provenance()
+            self.q._read_provenance('fp_')
 
     def test_check_ontology(self):
         with self.assertRaises(NotImplementedError):
@@ -189,7 +189,7 @@ class QuestionTest(TestCase):
         # Sets the know values
         kseries = pd.Series([True, True, True, 'nope',
                              False, False, False, False])
-        f_ = _identify_remap_function(bool, {'nope'})
+        f_ = self.q._identify_remap_function(bool, {'nope'})
         tseries = iseries.apply(f_)
 
         pdt.assert_series_equal(kseries, tseries)
@@ -202,14 +202,14 @@ class QuestionTest(TestCase):
                              False, False, False, False])
 
         # Gets the test values
-        f_ = _identify_remap_function(bool, {'cool '})
+        f_ = self.q._identify_remap_function(bool, {'cool '})
         tseries = iseries.apply(f_)
         pdt.assert_series_equal(kseries, tseries)
 
     def test_remap_type_str_pass_no_placeholder(self):
         iseries = self.map_['player_name']
         kseries = self.map_['player_name']
-        f_ = _identify_remap_function(str)
+        f_ = self.q._identify_remap_function(str)
         tseries = iseries.apply(f_)
         pdt.assert_series_equal(kseries, tseries)
 
@@ -221,7 +221,7 @@ class QuestionTest(TestCase):
         kseries = pd.Series(data=[1, 2, 3, 'i dont skate'],
                             index=['Whiskey', 'Chowder', 'Bitty', 'Lardo'],
                             name='collegate_hockey_years')
-        f_ = _identify_remap_function(int, {'i dont skate'})
+        f_ = self.q._identify_remap_function(int, {'i dont skate'})
         tseries = iseries.apply(f_)
         pdt.assert_series_equal(kseries, tseries)
 
@@ -232,9 +232,24 @@ class QuestionTest(TestCase):
         kseries = pd.Series(data=[1, 2, 3, 'error'],
                             index=['Whiskey', 'Chowder', 'Bitty', 'Lardo'],
                             name='collegate_hockey_years')
-        f_ = _identify_remap_function(float)
+        f_ = self.q._identify_remap_function(float)
         tseries = iseries.apply(f_)
         pdt.assert_series_equal(kseries, tseries)
+
+    def test_split_numeric_mapping_both(self):
+        known = {0: 'Dorm', 1: 'Haus'}
+        test_ = self.q._split_numeric_mapping('0=Dorm | 1=Haus')
+        self.assertEqual(known, test_)
+
+    def test_split_numeric_mapping_var(self):
+        known = ['Dorm', 'Haus']
+        test_ = self.q._split_numeric_mapping('Dorm | Haus')
+        self.assertEqual(known, test_)
+
+    def test_split_numeric_mapping_var(self):
+        known = ['Boston']
+        test_ = self.q._split_numeric_mapping('Boston')
+        self.assertEqual(known, test_)
 
     def test_to_dict(self):
         known = {'name': self.name,
@@ -250,16 +265,20 @@ class QuestionTest(TestCase):
     def test_to_series(self):
         self.q.order = ['Bitty', 'Ransom', 'Holster']
         self.q.missing = {'TBD'}
+        self.numeric_mapping = {1: 'Bitty', 2: 'Ransom', 3: 'Holster'}
 
         known = pd.Series({'name': self.name,
                            'description': self.description,
                            'dtype': 'str',
-                           'free_response': 'True',
-                           'clean_name': 'Player Name',
                            'type': 'Question',
+                           'clean_name': 'Player Name',
+                           'free_response': 'True',
+                           'missing': "TBD",
                            'order': 'Bitty | Ransom | Holster',
-                           'missing': "TBD"
+                           'numeric_mapping': '1=Bitty | 2=Ransom | 3=Holster'
                            })
+        known = known[['name', 'description', 'dtype', 'type', 'clean_name', 
+                       'free_response', 'missing', 'order']]
         test_ = self.q._to_series()
         pdt.assert_series_equal(known, test_)
 

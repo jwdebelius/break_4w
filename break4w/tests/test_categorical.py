@@ -23,14 +23,12 @@ class CategoricalTest(TestCase):
         self.description = 'Where the player can normally be found on the ice'
         self.dtype = str
         self.order = ["Striker", "D-man", "Goalie"]
-        self.extremes = ["Striker", "Goalie"]
 
         self.c = Categorical(
             name=self.name,
             description=self.description,
             dtype=self.dtype,
             order=self.order,
-            extremes=self.extremes,
             )
 
     def test_categorical_init(self):
@@ -40,7 +38,6 @@ class CategoricalTest(TestCase):
                            self.order)
 
         self.assertEqual(self.order, test.order)
-        self.assertEqual(test.extremes, self.extremes)
         self.assertEqual(test.type, 'Categorical')
         self.assertEqual(test.frequency_cutoff, None)
 
@@ -50,9 +47,8 @@ class CategoricalTest(TestCase):
                         dtype=ValueError)
 
     def test_update_order(self):
-        # Checks the current order and extremes
+        # Checks the current order
         self.assertEqual(self.c.order, ["Striker", "D-man", "Goalie"])
-        self.assertEqual(self.c.extremes, ["Striker", "Goalie"])
 
         # Sets up a function to adjust the data
         def remap_(x):
@@ -68,7 +64,6 @@ class CategoricalTest(TestCase):
 
         # Checks the updated order
         self.assertEqual(self.c.order, ["Offense", "Defense"])
-        self.assertEqual(self.c.extremes, ["Offense", 'Defense'])
 
     def test_analysis_apply_conversion_logged(self):
         kseries = pd.Series(data=['Offense', 'Defense', 'Defense', 'Defense'],
@@ -378,9 +373,10 @@ class CategoricalTest(TestCase):
         known = {'name': self.name,
                  'description': self.description,
                  'dtype': self.dtype,
-                 'order': self.order,
-                 'extremes': self.extremes,
                  'clean_name': 'Position',
+                 'type': 'Categorical',
+                 'order': self.order,
+                 'ref_val': ''
                  }
         type_, test = self.c.to_dict()
 

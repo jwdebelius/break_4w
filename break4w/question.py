@@ -193,6 +193,21 @@ class Question:
             'transformation': transformation,
             })
 
+    @staticmethod
+    def _split_numeric_mapping(str_, code_delim='=', var_delim=' | '):
+        """
+        Parses a string with order and variable delimiters
+        """
+        if (code_delim in str_):
+            return {int(amb_.split(code_delim)[0]): amb_.split(code_delim)[1]
+                    for amb_ in str_.split(var_delim)}
+        # elif (code_delim in str_):
+        #     return {int(num_): val_ for num_, val_ in str_.split(code_delim)}
+        elif (var_delim in str_):
+            return [val_ for val_ in str_.split(var_delim)]
+        else:
+            return [str_]
+
     def analysis_mask_missing(self, map_):
         """
         Remaps known missing values with pandas friendly nans
@@ -214,6 +229,9 @@ class Question:
         self._update_log("Mask missing values", "replace", '%s > np.nan'
                          % ';'.join(list(self.missing)))
 
+    def analysis_mask_ambigious(self, map_):
+        pass
+
     def write_provenance(self):
         """Writes the question provenance to a string
 
@@ -228,7 +246,11 @@ class Question:
                                        'transform_type', 'transformation']]
 
     def _read_provenance(self, fp_):
-        """Reads the existing question provenance
+        """
+        Reads the existing question provenance
+
+        to be added!
+
         """
         raise NotImplementedError
 
@@ -261,9 +283,15 @@ class Question:
         return (self.type.lower(), 
                 {k: v for k, v in tent_dict if _check_dict(k, v)})
 
-
     def _to_series(self):
-        """Formats data to be written to tsv"""
+        """
+        Formats data to be written to tsv
+
+        Parameters
+        ----------
+        write_numeric_codes: bool, optional
+
+        """
         tent_dict = self.__dict__.items()
 
         def _check_dict(k, v):
@@ -283,8 +311,10 @@ class Question:
             if isinstance(v, list):
                 return ' | '.join([str(x) for x in v])
                 return ' | '.join(v)
-            if isinstance(v, (set, tuple)):
+            elif isinstance(v, (set, tuple)):
                 return ' | '.join([str(x) for x in v])
+            elif isinstance(v, dict):
+                return ' | '.join(['%s=%s' % (x, y) for x, y in v.items()])
             else:
                 str_ = str(v)
                 str_1 = str_.replace("<class '", '').replace("'>", "")
@@ -295,62 +325,65 @@ class Question:
 
         return pd.Series(dict_)
 
+    @staticmethod
+    def _identify_remap_function(dtype, placeholders=None, 
+                                 true_values=true_values,
+                                 false_values=false_values):
+        """
+        Selects an appropriate function to convert data from str to dtype
 
-def _identify_remap_function(dtype, placeholders=None, true_values=true_values,
-    false_values=false_values):
-    """Selects an appropriate function to convert data from str to dtype
+        Parameters
+        ----------
+        dtype : object
+            The datatype in which the responses should be represented. (i.e.
+            `float`, `int`, `str`).
+        placeholders : set, optional
+            Acceptable values to be ignored representing either placeholder values
+            such as text for missing values, blanks, or ambigious measurements.
+        true_values : set, optional
+            Acceptable values for true values for boolean data
+        false_values : set, optional
+            Acceptable values for false values for boolean data
 
-    Parameters
-    ----------
-    dtype : object
-        The datatype in which the responses should be represented. (i.e.
-        `float`, `int`, `str`).
-    placeholders : set, optional
-        Acceptable values to be ignored representing either placeholder values
-        such as text for missing values, blanks, or ambigious measurements.
-    true_values : set, optional
-        Acceptable values for true values for boolean data
-    false_values : set, optional
-        Acceptable values for false values for boolean data
+        Returns
+        -------
+        Function
+            A function to convert the strings to the correct data type. The
+            function will return "error" if the value cannot be cast 
+            appropriately.
+        """
+        if placeholders is None:
+            placeholders = []
+        if dtype == bool:
+            #  Converts any non-placeholder string values to lowercase
+            def clean_up_strings(x):
+                if isinstance(x, str) and (x not in placeholders):
+                    return x.lower()
+                else:
+                    return x
 
-    Returns
-    -------
-    Function
-        A function to convert the strings to the correct data type. The
-        function will return "error" if the value cannot be cast appropriately.
-    """
-    if placeholders is None:
-        placeholders = []
-    if dtype == bool:
-        #  Converts any non-placeholder string values to lowercase
-        def clean_up_strings(x):
-            if isinstance(x, str) and (x not in placeholders):
-                return x.lower()
-            else:
-                return x
+            def remap_(x):
+                if (x in placeholders) or (pd.isnull(x)):
+                    return x
+                x = clean_up_strings(x)
 
-        def remap_(x):
-            if (x in placeholders) or (pd.isnull(x)):
-                return x
-            x = clean_up_strings(x)
-
-            if x in true_values:
-                return True
-            elif x in false_values:
-                return False
-            else:
-                return 'error'
-    else:
-        # Defines a function to clean up all other datatypes
-        def remap_(x):
-            if (x in placeholders) or pd.isnull(x):
-                return x
-            else:
-                try:
-                    return dtype(x)
-                except:
+                if x in true_values:
+                    return True
+                elif x in false_values:
+                    return False
+                else:
                     return 'error'
+        else:
+            # Defines a function to clean up all other datatypes
+            def remap_(x):
+                if (x in placeholders) or pd.isnull(x):
+                    return x
+                else:
+                    try:
+                        return dtype(x)
+                    except:
+                        return 'error'
 
-    return remap_
+        return remap_
 
 

@@ -423,7 +423,7 @@ class Continous(Question):
                  if _check_dict(k, v)}
 
         if ((self.bound_lower is not None) or (self.bound_upper is not None)):
-            dict_['extremes'] = \
+            dict_['order'] = \
                 ('%s | %s' % (self.bound_lower, self.bound_upper))
 
         if ((self.outlier_lower is not None) or 

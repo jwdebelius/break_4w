@@ -20,6 +20,11 @@ type_lookup = {'continous': Continous,
 
 
 class DataDictionary(OrderedDict):
+    """
+    Builds a data dictionary
+
+
+    """
     def __init__(self, columns, types, description=None):
         """Initializes the dictionary object
 
@@ -39,8 +44,10 @@ class DataDictionary(OrderedDict):
             not conform to the controlled vocabulary, the column will be 
             read as a Question object with limited functionality.
         description: str
-            The 
+            A description of the data dictionary or study of no more than
+            80 characters.
         """
+
         self.log = []
         if description is None:
             self.description = ''
@@ -379,7 +386,7 @@ class DataDictionary(OrderedDict):
         elif not pass_:
             raise ValueError(message)
 
-    def to_dataframe(self):
+    def to_dataframe(self, write_numeric_codes=False, clean=False):
         u"""Converts data dictionary to a pandas dataframe
 
         Returns
@@ -395,11 +402,40 @@ class DataDictionary(OrderedDict):
                 * "clean_name": the cleaned up column name
             It may also contain columns describing the variable order,
             limits on the data, units, etc.
+        read_numeric_codes: bool, optional
+            Whether data should be interpreted using numeric coding, where
+            a mapping of something like "0=female | 1=male | 2=unknown", or
+            if the coding should be left as is
+        clean: bool, optional
+            Returns a subset of columns for the data dictionary
+
+        Returns
+        -------
+        DataFrame
+            A dataframe mapping the variable name to its description, question
+            type, datatype, and order. 
+
+        Example
+        -------
+
         """
+
         df_ = pd.concat(axis=1, sort=False, objs=[
-            col_._to_series() for col_ in self.values()
-            ])
-        return df_.T.set_index('name')
+            col_._to_series() 
+            for col_ in self.values()
+            ]).T
+
+        if write_numeric_codes and ('numeric_mapping' in df_.columns):
+            df_.loc[df_['numeric_mapping'].notna(), 'order'] = \
+                df_.loc[df_['numeric_mapping'].notna(), 'numeric_mapping']
+            df_.drop(columns=['numeric_mapping'], inplace=True)
+
+        if clean:
+            df_ = df_[['name', 'description', 'type', 'dtype', 'order', 
+                       'ambigious', 'missing', 'notes']]
+            df_.drop(columns=df.columns[df_.isna().all(axis=0)], inplace=True)
+
+        return df_.set_index('name')
 
     def to_pandas_stata(self):
         """
@@ -417,4 +453,91 @@ class DataDictionary(OrderedDict):
         variable_desc = {k: v.description for k,v in self.items()}
 
         return self.description, variable_desc
+
+    @classmethod
+    def read_dataframe(cls, df_, description=None, read_numeric_codes=False, 
+        val_delim=' | ', code_delim='='):
+        """Builds the data dictionary from a dataframe
+
+        Parameters
+        ----------
+        df_ : DataFrame
+            A pandas dataframe version of the data dictionary where the data
+            is indexed by `name`
+        description: str
+            A description of the data dictionary or study of no more than
+            80 characters.
+        read_numeric_codes: bool, optional
+            Whether columns should be read with a numerical delimiter (i.e
+            "=") to parse a numeric value into a categorical one. For example,
+            if numeric is true, then "0=female | 1=male" would be parsed that
+            any data encoded as 0 maps to female, any data encoded as 1 maps
+            to male, and the order of hte values is `[0, 1]` (corresponding to
+            `['female', 'male']`). Otherwise, the line would be read
+            literally, and the order is read as `["0=female", "1=male"]`.
+        val_delim: str, optional
+            The seperator between values in the "order" column.
+        code_delim: str, optional
+            The delimiter between a numericly coded categorical variable and
+            the value it maps to.
+
+        Returns
+        -------
+        DataDictionary
+            A data dictionary object with the newly described study.
+
+        Examples
+        --------
+
+        """
+        types = []
+        cols = []
+
+        for name_, var_ in df_.iterrows():
+            # Extracts the question type
+            type_ = var_['type']
+            var_.drop('type', inplace=True)
+
+            # Cleans up the data type
+            dtype_ = exec(var['dtype'])
+            var_['dtype'] = dtype
+            
+            # Handles continous variables
+            if type_ == 'Continous':
+                var_['limits'] = [
+                    dtype_(a) for a in var_['order'].split(val_delim)
+                ]
+                var_['outliers'] = [
+                    dtype_(a) for a in var_['ambiguous'].split(val_delim)
+                ]
+                var_.drop(['order', 'ambiguous'], inplace=True)
+            
+            # If theres a possibility of value seperation with numeric coding
+            # and the coding delimiter is present, the data gets split into
+            # the numeric remapping 
+            if read_numeric_codes and map_delim in var_['order']:
+                var_['numeric_mapping'] = {
+                    v.split(map_delim)[0]: v.split(map_delim)[1]
+                    for v in var_['order'].split(val_delim)
+                }
+                var_['order'] = [
+                    v for v in var_['numeric_mapping'].values()
+                ]
+                var_['ordinal'] = True
+        
+            # Otherwise pulls out the values as order
+            else:
+                var_['order'] = [
+                    dtype(v) for v in var_['order'].split(val_delim)
+                ]
+
+            # Updates the column and type objects
+            types.append(type_)
+            cols.append(var_)
+
+        return cls(cols, types, description)
+
+
+
+
 

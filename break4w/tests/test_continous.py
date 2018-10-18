@@ -348,7 +348,6 @@ class ContinousTest(TestCase):
         self.assertEqual(test, known)
         self.assertEqual('continous', type_)
 
-
     def test_to_series(self):
         self.c.missing = {"lacross"}
         self.c.frogs = ['foxtrot', 'whiskey', 'tango']
@@ -357,11 +356,15 @@ class ContinousTest(TestCase):
                            'units': self.units,
                            'dtype': 'int',
                            'type': 'Continous',
-                           'extremes': '1 | None',
+                           'order': '1 | None',
                            'ambiguous': 'None | 5',
                            'missing': 'lacross',
                            'frogs': 'foxtrot | whiskey | tango',
-                           'clean_name': 'Years On Team'})
+                           'clean_name': 'Years On Team',
+                           })
+        known = known[['name', 'description', 'dtype', 'type', 
+                       'clean_name', 'missing', 'units', 'frogs',
+                       'order', 'ambiguous']]
 
         test = self.c._to_series()
         pdt.assert_series_equal(known, test)

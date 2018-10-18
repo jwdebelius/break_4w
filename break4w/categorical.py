@@ -8,13 +8,11 @@ from break4w.question import Question, _identify_remap_function
 
 class Categorical(Question):
 
-    def __init__(self, name, description, dtype, order, extremes=None,
-        frequency_cutoff=None, ambiguous=None,
-        clean_name=None, mimarks=False, ontology=None,
-        missing=None, blanks=None, colormap=None,
-        name_mapping=None, source_columns=None,
-        derivative_columns=None, notes=None, **other_properties):
-        r"""A question object for categorical or ordinal questions
+    def __init__(self, name, description, dtype, order, reference_val=None,
+        ambiguous=None, frequency_cutoff=None, name_mapping=None,
+        ordinal=False, **kwargs):
+        u"""
+        A question object for categorical or ordinal questions
 
         Parameters
         ----------
@@ -36,22 +34,37 @@ class Categorical(Question):
             values, even if they  do not map to a clear order in a string.
             (i.e. "Infant", "Toddler", "Preschooler", "Child") have a clear
             order, but do not map nicely into a well known order.
-        clean_name : str, optional
-            A nicer version of the way the column should be named. This can be
-            used for display in figures. If nothing is provided, the column
-            name will be coverted to a title by replacing an underscores with
-            spaces and converting to title case.
-        frequency_cutoff : float, optional
-            The minimum number of observations required to keep a sample group
-            in an analysis. For example, if a value is only represented twice
-            in a question, that value may not be appropriate for most
-            standard statistical tests.
+        reference_val: float, str
+            The value from the field (must be an element in `order`) which
+            should serve as the reference or null state. If no value is
+            provided, its assumed that the first value is the reference value.
         ambiguous : str, list, optional
             A list of values which are considered ambiguous responses.
             For example, a response of "Not Sure" might be valid and useful to
             maintain for validation, but should be ignored during analysis.
             The ambiguous values can be cast to null values using the
             `analyis_remove_ambiguous` function.
+        missing : str, list, optional
+            Acceptable missing values. Missing values will be used to validate
+            all values in the column. Specified missing values can also be
+            ignored during analysis if correctly specified.
+        frequency_cutoff : float, optional
+            The minimum number of observations required to keep a sample group
+            in an analysis. For example, if a value is only represented twice
+            in a question, that value may not be appropriate for most
+            standard statistical tests.
+        name_mapping: dict, optional
+            A dictionary of values which map the name of the values to a
+            numeric code (i.e. if female is coded as 0, male is coded as 1,
+            and other is coded as 2, then the dictionary would be
+            `{0: "female", 1: "male", 2: "other"}`).
+        ordinal : bool, optional
+            Whether the data should be treated as ordinal, or not
+        clean_name : str, optional
+            A nicer version of the way the column should be named. This can be
+            used for display in figures. If nothing is provided, the column
+            name will be coverted to a title by replacing an underscores with
+            spaces and converting to title case.
         mimarks : bool, optional
             If the question was a mimarks standard field
         ontology : str, optional
@@ -69,11 +82,9 @@ class Categorical(Question):
             colormap object, a string describing a matplotlib compatable
             colormap (i.e. `'RdBu'`), or an iterable of matplotlib compatable
             color values.
-        name_mapping: dict, optional
-            A dictionary of values which map the name of the values to a
-            numeric code (i.e. if female is coded as 0, male is coded as 1,
-            and other is coded as 2, then the dictionary would be
-            `{0: "female", 1: "male", 2: "other"}`).
+        original_name: str, optional
+            The name of the column in a previous iteration of the metadata
+            (often the version of the metadata provided by the collaborator).
         source_columns: list, optional
             Other columns in the mapping file used to create this column.
         derivative_columns: list, optional
@@ -83,6 +94,7 @@ class Categorical(Question):
             about the data source, manual correction if it happened, etc.
             Basically any free text information someone should know about
             the column.
+
 
         Raises
         ------
@@ -102,29 +114,17 @@ class Categorical(Question):
 
         # Initializes the question
         Question.__init__(self, name, description, dtype,
-                          clean_name=clean_name,
-                          mimarks=mimarks,
-                          ontology=ontology,
-                          missing=missing,
-                          blanks=blanks,
-                          colormap=colormap,
-                          source_columns=source_columns,
-                          derivative_columns=derivative_columns,
-                          notes=notes,
-                          **other_properties
+                          **kwargs
                           )
 
         self.type = 'Categorical'
 
         self.order = order
-        if extremes is not None:
-            self.extremes = extremes
-        else:
-            self.extremes = [order[0], order[-1]]
+
+        self.ref_val = reference_val
 
         self.frequency_cutoff = frequency_cutoff
-        self.name_mapping = name_mapping
-        self.numeric_mapping = None
+
         if ambiguous == None:
             self.ambiguous = None
         elif isinstance(ambiguous, str):
@@ -147,7 +147,6 @@ class Categorical(Question):
             new_o = remap_(o)
             if new_o not in self.order and not pd.isnull(new_o):
                 self.order.append(new_o)
-        self.extremes = [remap_(e) for e in self.extremes]
 
     def analysis_apply_conversion(self, map_, remap_, command_name,
         loggable=True):
@@ -424,3 +423,4 @@ class Categorical(Question):
             raise ValueError(m_)
         else:
             self._update_log('validate', 'pass', 'all values were valid')
+
