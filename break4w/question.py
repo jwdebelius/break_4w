@@ -6,7 +6,16 @@ import pydoc
 import numpy as np
 import pandas as pd
 
-
+true_values = {'yes', 'true', 1, 1.0, True}
+false_values = {'no', 'false', 0, 0.0, False}
+ebi_null = {'not applicable',
+            'missing: not provided',
+            'missing: not collected',
+            'missing: restricted',
+            'not provided',
+            'not collected',
+            'restricted',
+            }
 properties_str = {'name', 'description', 'clean_name', 'notes', 'units',
                       'original_name', 'var_labels', 'var_numbers', 'type'}
 properties_num = {'frequency_cutoff', 'bound_lower', 'bound_upper',
@@ -278,7 +287,8 @@ class Question:
         def _check_dict(k, v):
             if k in {'log'}:
                 return False
-            if (v is None) or (isinstance(v, list) and (len(v) == 0)):
+            elif ((v is None) or 
+                (isinstance(v, (list, set, dict)) and (len(v) == 0))):
                 return False
             elif ((k in self.defaults) and (self.defaults[k] == v)):
                 return False
@@ -342,14 +352,21 @@ class Question:
                 return None
             if k == 'colormap':
                 return check_cmap(v)
-            elif k == 'ref_value':
+            elif (k == 'ref_value') and (dtype_ is bool):
+                return pydoc.locate(v.title())
+            elif (k == 'ref_value'):
                 return dtype_(v)
+            elif (k == 'order') and (dtype_ is bool):
+                s_ = cls._iterable_from_str(
+                    v, return_type=list, code_delim=code_delim, 
+                    var_delim=var_delim, null_value=null_value)
+                return [pydoc.locate(v_.title()) for v_ in s_]
             elif k == 'order':
                 return cls._iterable_from_str(v, return_type=list, **i_param)
             elif k in properties_num:
                 return float(v)
             elif k in properties_bin:
-                return (v.lower() in cls.true_values)
+                return pydoc.locate(v.title())
             elif k in properties_set:
                 return cls._iterable_from_str(v, **i_param)
             else:

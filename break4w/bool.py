@@ -56,14 +56,19 @@ class Bool(Categorical):
         if ref_value is None:
             ref_value = f_format
 
-        Categorical.__init__(self,
-                             name=name,
-                             description=description,
-                             dtype=bool,
-                             order=[t_format, f_format],
-                             clean_name=clean_name,
-                             ref_value=ref_value,
-                             **kwargs
-                             )
+        if 'dtype' not in kwargs:
+            kwargs['dtype'] = bool
+        if 'order' not in kwargs:
+            kwargs['order'] = [f_format, t_format]
+        if name not in kwargs:
+            kwargs['name'] = name
+        if 'description' not in description:
+            kwargs['description'] = description
+        if 'clean_name' not in kwargs:
+            kwargs['clean_name'] = clean_name
+        if 'ref_value' not in kwargs:
+            kwargs['ref_value'] = ref_value
+
+        Categorical.__init__(self, **kwargs)
         self.type = 'Bool'
 

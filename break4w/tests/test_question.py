@@ -319,6 +319,17 @@ class QuestionTest(TestCase):
         self.assertEqual(q.derivative_columns, [])
         self.assertEqual(q.notes, None)
 
+    def test_read_series_bool(self):
+        var_ = pd.Series({'name': self.name,
+                          'description': self.description,
+                          'dtype': 'bool',
+                          'order': 'False | True',
+                          'ref_value': 'False'})
+        q = Question._read_series(var_)
+        self.assertEqual(q.dtype, bool)
+        self.assertFalse(q.ref_value)
+        self.assertEqual(q.order, [False, True])
+
 
 if __name__ == '__main__':
     main()

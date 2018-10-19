@@ -34,29 +34,50 @@ class BoolTest(TestCase):
         b = Bool(name=self.name,
                  description=self.description,
                  )
-        self.assertEqual(b.order, ['true', 'false'])
+        self.assertEqual(b.order, ['false', 'true'])
         self.assertEqual(b.ambiguous, None)
+        self.assertEqual(self.b.type, 'Bool')
 
     def test_bool_init_ambiguous_and_order(self):
-        self.assertEqual(self.b.type, 'Bool')
-        self.assertEqual(self.b.order, ['True', 'False'])
+        self.assertEqual(self.b.order, ['False', 'True'])
         self.assertEqual(self.b.ambiguous, {'TBD'})
 
     def test_validate_pass(self):
         self.b.validate(self.map_)
 
-    def test_to_dict(self):
-        known = {'name': self.name,
-                 'description': self.description,
-                 'dtype': bool,
-                 'ambiguous': {'TBD'},
-                 'order': self.bool,
-                 'clean_name': 'Team Captain',
-                 'ref_value': 'False',
-                 }
-        type_, test = self.b.to_dict()
-        self.assertEqual(type_, 'bool')
-        self.assertEqual(test, known)
+    def test_to_series(self):
+        known = pd.Series({'name': self.name,
+                           'description': self.description,
+                           'dtype': 'bool',
+                           'type': 'Bool',
+                           'clean_name': 'Team Captain',
+                           'order': 'False | True',
+                           'ref_value': 'False',
+                           'ambiguous': 'TBD',
+                           })
+        test = self.b._to_series()
+        pdt.assert_series_equal(known, test)
+
+    def test_read_series(self):
+        series = pd.Series({'name': self.name,
+                           'description': self.description,
+                           'dtype': 'bool',
+                           'type': 'Bool',
+                           'clean_name': 'Team Captain',
+                           'order': 'False | True',
+                           'ref_value': 'False',
+                           })
+        b = Bool._read_series(series)
+        
+        self.assertTrue(isinstance(b, Bool))
+        self.assertEqual(b.name, self.name)
+        self.assertEqual(b.description, self.description)
+        self.assertEqual(b.clean_name, 'Team Captain')
+        self.assertEqual(b.type, 'Bool')
+        self.assertEqual(b.dtype, bool)
+        self.assertEqual(b.order, [False, True])
+        self.assertFalse(b.ref_value)
+
 
 
 if __name__ == '__main__':

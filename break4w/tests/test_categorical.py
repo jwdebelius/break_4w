@@ -133,18 +133,30 @@ class CategoricalTest(TestCase):
                          'all values were valid'
                          )
 
-    def test_to_dict(self):
-        known = {'name': self.name,
-                 'description': self.description,
-                 'dtype': self.dtype,
-                 'clean_name': 'Position',
-                 'order': self.order,
-                 'ref_value': 'Striker',
-                 }
-        type_, test = self.c.to_dict()
+    def test_to_series(self):
+        known = pd.Series({'name': self.name,
+                           'description': self.description,
+                           'dtype': 'str',
+                           'type': 'Categorical',
+                           'clean_name': 'Position',
+                           'order': 'Striker | D-man | Goalie',
+                           'ref_value': 'Striker',
+                            })
+        test_ = self.c._to_series()
+        pdt.assert_series_equal(known, test_)
 
-        self.assertEqual(known, test)
-        self.assertEqual(type_, 'categorical')
+    def test_read_series(self):
+        var_ = pd.Series({'name': self.name,
+                          'description': self.description,
+                          'dtype': 'str',
+                          'order': 'Striker | D-man | Goalie',
+                          })
+        c = Categorical._read_series(var_)
+        self.assertTrue(isinstance(c, Categorical))
+        self.assertEqual(c.order, self.order)
+        self.assertEqual(c.name, self.name)
+        self.assertEqual(c.description, self.description)
+        self.assertEqual(c.dtype, str)
 
 if __name__ == '__main__':
     main()
