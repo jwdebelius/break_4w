@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from break4w.question import Question, _identify_remap_function
+from break4w.question import Question
 
 
 class Continous(Question):
@@ -131,131 +131,6 @@ class Continous(Question):
                          'and %s > %s.' % (ori_lower, lower, ori_upper, upper)
                          )
 
-    def analysis_drop_outliers(self, map_):
-        """
-        Removes datapoints outside of the specified limits
-
-        Parameters
-        ----------
-        map_ : DataFrame
-            A pandas object containing the data to be analyzed. The
-            Question `name` should be a column in the `map_`.
-
-        """
-        if ((self.outlier_lower is not None) and
-                (self.outlier_upper is not None)):
-            def remap_(x):
-                if x < self.outlier_lower:
-                    return np.nan
-                elif x > self.outlier_upper:
-                    return np.nan
-                else:
-                    return x
-            summary = ('values outside [%s, %s]'
-                       % (self.outlier_lower, self.outlier_upper))
-        elif (self.outlier_lower is not None):
-            def remap_(x):
-                if x < self.outlier_lower:
-                    return np.nan
-                else:
-                    return x
-            summary = ('values less than %s' % self.outlier_lower)
-        elif (self.outlier_upper is not None):
-            def remap_(x):
-                if x > self.outlier_upper:
-                    return np.nan
-                else:
-                    return x
-            summary = ('values greater than %s' % self.outlier_upper)
-        else:
-            def remap_(x):
-                return x
-            summary = 'No values dropped'
-
-        map_[self.name] = map_[self.name].apply(remap_)
-        self._update_log('drop outliers', 'drop', summary)
-
-    def analysis_set_sig_figs(self, map_):
-        """
-        Rounds the continous values to the correct significant figures.
-
-        Significant figures are awesome (along with unitss). This function
-        is designed to help you maintain the correct significant digits
-        for the value measured.
-
-        Parameters
-        ----------
-        map_ : DataFrame
-            A pandas object containing the data to be analyzed. The
-            Question `name` should be a column in the `map_`.
-
-        Raises
-        ------
-        ValueError
-            If the sig_figs parameter has not been specified.
-
-        """
-        if self.sig_figs is None:
-            self._update_log('round significant figures', 'correct',
-                             'Rounding must be defined!')
-            raise ValueError('Rounding must be defined!')
-
-        # if self.dtype is float:
-        def remap_(x):
-            return np.round(x, -int(np.floor(np.log10(self.sig_figs))))
-
-        map_[self.name] = map_[self.name].apply(remap_)
-        for l in [self.bound_lower, self.bound_upper,
-                  self.outlier_lower, self.outlier_upper]:
-            if l is not None:
-                l = remap_(l)
-
-        self._update_log('round significant figures', 'correct',
-                         'Rounded the data to the nearest %s.'
-                         % self.sig_figs)
-
-    def analysis_remap_dtype(self, map_):
-        """Converts values in the question column to the correct datatype
-
-        Parameters
-        ----------
-        map_ : DataFrame
-            A pandas DataFrame containing the metadata being analyzed. The
-            question object describes a column within the `map_`.
-
-        Raises
-        ------
-        TypeError
-            The question is assumed to be a Boolean, but the value cannot
-            be cast to a boolean value.
-
-        """
-        if self.blanks is None:
-            blanks = set([])
-
-        placeholders = self.missing.union(blanks)
-
-        remap_ = _identify_remap_function(dtype=self.dtype,
-                                          placeholders=placeholders,
-                                          )
-        iseries = map_[self.name].copy()
-        oseries = iseries.apply(remap_)
-
-        if np.any(oseries.apply(lambda x: x == 'error')):
-            message = (
-                'could not convert to %s'
-                % (str(self.dtype).replace("<class '", '').replace("'>", ''))
-                )
-            self._update_log('transformation', 'cast data type', message)
-            raise TypeError(message)
-
-        map_[self.name] = oseries
-        message = (
-            'convert to %s'
-            % (str(self.dtype).replace("<class '", '').replace("'>", ''))
-            )
-        self._update_log('transformation', 'cast data type', message)
-
     def validate(self, map_):
         """
         Checks values fall into the acceptable range for this type of data.
@@ -292,11 +167,11 @@ class Continous(Question):
             ambiguous = set([])
 
         placeholders = self.missing.union(blanks).union(ambiguous)
-        f_ = _identify_remap_function(dtype=self.dtype,
-                                      placeholders=placeholders,
-                                      true_values=self.true_values,
-                                      false_values=self.false_values,
-                                      )
+        f_ = self._identify_remap_function(dtype=self.dtype,
+                                           placeholders=placeholders,
+                                           true_values=self.true_values,
+                                           false_values=self.false_values,
+                                           )
         iseries = iseries.apply(f_)
         if np.any(iseries.apply(lambda x: x == 'error')):
             message = (
