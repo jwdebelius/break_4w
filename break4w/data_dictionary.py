@@ -25,6 +25,8 @@ class DataDictionary(OrderedDict):
 
 
     """
+    default_cols = ['name', 'description', 'type', 'dtype', 'order', 
+                    'units', 'ambigious', 'missing', 'notes']
     def __init__(self, columns, types, description=None):
         """Initializes the dictionary object
 
@@ -71,13 +73,11 @@ class DataDictionary(OrderedDict):
         summary = ['Data Dictionary with %i columns'  % len(self)]
         if len(self.description) > 0:
             summary.append('\t%s' % self.description)
-        summary.append('-----------------------------------------------------'
-                       '------------------------')
+        summary.append('------------------------------------')
                   
         for col in self.values():
             summary.append('%s (%s)' % (col.name, col.type))
-        summary.append('-----------------------------------------------------'
-                       '------------------------')
+        summary.append('------------------------------------')
         return '\n'.join(summary)
 
     def _update_log(self, command, column=None,
@@ -431,9 +431,10 @@ class DataDictionary(OrderedDict):
             df_.drop(columns=['numeric_mapping'], inplace=True)
 
         if clean:
-            df_ = df_[['name', 'description', 'type', 'dtype', 'order', 
-                       'units', 'ambigious', 'missing', 'notes']]
-            df_.drop(columns=df.columns[df_.isna().all(axis=0)], inplace=True)
+            cols = [c for c in self.default_cols if c in df_]
+            df_ = df_[cols]
+            df_.drop(columns=df_.columns[df_.isna().all(axis=0)], 
+                     inplace=True)
 
         return df_.set_index('name')
 

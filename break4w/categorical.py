@@ -125,8 +125,12 @@ class Categorical(Question):
         else:
             self.ref_val = reference_val
 
-        # if self.
-        # self.var_numeric = 
+        if numeric_mapping is not None:
+            self.var_numeric = numeric_mapping
+            self.var_label = {g: i for g, i in numeric_mapping.items()}
+        else:
+            self.var_label = None
+            self.var_numeric = None
 
         self.frequency_cutoff = frequency_cutoff
 

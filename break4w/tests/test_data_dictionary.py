@@ -48,7 +48,6 @@ class DictionaryTest(TestCase):
                                ' ice',
                 'dtype': str,
                 'order': ["Striker", "D-man", "Goalie"],
-                'extremes': ["Striker", "Goalie"],
             },
             {
                 'name': 'nickname',
@@ -373,34 +372,35 @@ class DictionaryTest(TestCase):
         self.assertEqual(log_.loc[6, 'transformation'], 
             'There were issues with the following columns:\nyears_on_team')
 
-    # def test_to_dataframe(self):
-    #     self.dictionary['nickname'].numeric_mapping = {1: 'Bitty', 
-    #                                                    2: 'Ransom', 
-    #                                                    3: 'Holster'}
+    def test_to_dataframe(self):
+        self.dictionary['nickname'].var_numeric = {1: 'Bitty', 
+                                                   2: 'Ransom', 
+                                                   3: 'Holster'}
 
 
-    #     columns = ['years_on_team', 'team_captain', 'position', 'nickname']
-    #     known = pd.DataFrame(
-    #         data=[columns,
-    #               [c['description'] for c in self.columns],
-    #               ['int', 'bool', 'str', 'str'],
-    #               ['Continous', 'Bool', 'Categorical', 'Question'],
-    #               ['Years On Team', 'Team Captain', 'Position', 'Nickname'],
-    #               ['years', np.nan, np.nan, np.nan],
-    #               [np.nan, 'true | false', 'Striker | Goalie', np.nan],
-    #               [np.nan, 'TBD', np.nan, np.nan],
-    #               ['1 | None', 'true | false', 'Striker | D-man | Goalie', 
-    #                np.nan],
-    #               [np.nan, np.nan, np.nan, '1=Bitty | 2=Ransom | 3=Holster'],
-    #               ],
-    #         index=['name', 'description', 'dtype', 'type', 'clean_name', 
-    #                'units', 'extremes', 'missing', 'order', 'numeric_mapping']
-    #         ).T
-    #     known.set_index('name', inplace=True)
-    #     known = known[['description', 'dtype', 'type', 'clean_name', 'units', 
-    #                    'order', 'missing', 'extremes', 'numeric_mapping']]
+        columns = ['years_on_team', 'team_captain', 'position', 'nickname']
+        known = pd.DataFrame(
+            data=[columns,
+                  [c['description'] for c in self.columns],
+                  ['int', 'bool', 'str', 'str'],
+                  ['Continous', 'Bool', 'Categorical', 'Question'],
+                  ['Years On Team', 'Team Captain', 'Position', 'Nickname'],
+                  ['years', np.nan, np.nan, np.nan],
+                  [np.nan, 'TBD', np.nan, np.nan],
+                  ['1 | None', 'true | false', 'Striker | D-man | Goalie', 
+                   np.nan],
+                  [np.nan, np.nan, np.nan, '1=Bitty | 2=Ransom | 3=Holster'],
+                  [np.nan, 'false', 'Striker', np.nan],
+                  ],
+            index=['name', 'description', 'dtype', 'type', 'clean_name', 
+                   'units', 'missing', 'order', 'var_numeric', 'ref_val']
+            ).T
+        known.set_index('name', inplace=True)
+        known = known[['description', 'dtype', 'type', 'clean_name', 'units', 
+                       'order', 'missing', 'ref_val', 'var_numeric']]
+        test = self.dictionary.to_dataframe()
 
-    #     pdt.assert_frame_equal(known, self.dictionary.to_dataframe())
+        pdt.assert_frame_equal(known, self.dictionary.to_dataframe())
 
     def test_to_dateframe_write_numeric(self):
         self.dictionary['nickname'].numeric_mapping = {1: 'Bitty', 
@@ -416,17 +416,17 @@ class DictionaryTest(TestCase):
                   ['Continous', 'Bool', 'Categorical', 'Question'],
                   ['Years On Team', 'Team Captain', 'Position', 'Nickname'],
                   ['years', np.nan, np.nan, np.nan],
-                  [np.nan, 'true | false', 'Striker | Goalie', np.nan],
                   [np.nan, 'TBD', np.nan, np.nan],
                   ['1 | None', 'true | false', 'Striker | D-man | Goalie', 
                    '1=Bitty | 2=Ransom | 3=Holster'],
+                  [np.nan, 'false', 'Striker', np.nan],
                   ],
             index=['name', 'description', 'dtype', 'type', 'clean_name', 
-                   'units', 'extremes', 'missing', 'order']
+                   'units', 'missing', 'order', 'ref_val']
             ).T
         known.set_index('name', inplace=True)
         known = known[['description', 'dtype', 'type', 'clean_name', 'units', 
-                       'order', 'missing', 'extremes']]
+                       'order', 'missing', 'ref_val']]
         test = self.dictionary.to_dataframe(write_numeric_codes=True)
         pdt.assert_frame_equal(known, test)
 
@@ -442,19 +442,17 @@ class DictionaryTest(TestCase):
                   [c['description'] for c in self.columns],
                   ['int', 'bool', 'str', 'str'],
                   ['Continous', 'Bool', 'Categorical', 'Question'],
-                  ['Years On Team', 'Team Captain', 'Position', 'Nickname'],
                   ['years', np.nan, np.nan, np.nan],
-                  [np.nan, 'true | false', 'Striker | Goalie', np.nan],
                   [np.nan, 'TBD', np.nan, np.nan],
                   ['1 | None', 'true | false', 'Striker | D-man | Goalie', 
                    '1=Bitty | 2=Ransom | 3=Holster'],
                   ],
-            index=['name', 'description', 'dtype', 'type', 'clean_name', 
-                   'units', 'extremes', 'missing', 'order']
+            index=['name', 'description', 'dtype', 'type',
+                   'units', 'missing', 'order']
             ).T
         known.set_index('name', inplace=True)
-        known = known[['description', 'dtype', 'type', 'clean_name', 'units', 
-                       'order', 'missing', 'extremes']]
+        known = known[['description', 'type', 'dtype', 'order', 'units', 
+                       'missing']]
         test = self.dictionary.to_dataframe(True, True)
         pdt.assert_frame_equal(known, test)
 
