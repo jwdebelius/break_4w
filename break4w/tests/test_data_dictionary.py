@@ -101,14 +101,12 @@ class DictionaryTest(TestCase):
     def test_str_(self):
         known = ('Data Dictionary with 4 columns\n'
                  '\tJohnson doesnt know man, this is a weird study.\n'
-                 '-----------------------------------------------------------'
-                 '------------------\n'
+                 '------------------------------------\n'
                  'years_on_team (Continous)\n'
                  'team_captain (Bool)\n'
                  'position (Categorical)\n'
                  'nickname (Question)\n'
-                 '-----------------------------------------------------------'
-                 '------------------')
+                 '------------------------------------')
         test = self.dictionary.__str__()
 
         self.assertEqual(known, test)
