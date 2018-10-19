@@ -7,9 +7,7 @@ from break4w.question import Question
 class Continous(Question):
 
     def __init__(self, name, description, units, dtype=float, limits=None,
-        outliers=None, sig_figs=None, magnitude=1, clean_name=None,
-        mimarks=False, ontology=None, missing=None, blanks=None,
-        colormap=None):
+                 sig_figs=None, magnitude=1, **kwargs):
         """A Question object with continous responses
 
         Parameters
@@ -45,27 +43,6 @@ class Continous(Question):
             The number of signfiicant figures appropriate for the measurement.
             This should be expressed as a decimal (i.e. `sig_figs = 0.1`),
             specifying the units of error on the value.
-        clean_name : str, optional
-            A nicer version of the way the column should be named. This can be
-            used for display in figures. If nothing is provided, the column
-            name will be coverted to a title by replacing an underscores with
-            spaces and converting to title case.
-        mimarks : bool, optional
-            If the question was a mimarks standard field
-        ontology : str, optional
-            The type of ontology, if any, used to answer the question. An
-            ontology provides a consistent, structured vocabulary. A list
-            of ontologies can be found at https://www.ebi.ac.uk/ols/ontologies
-        missing : str, list, optional
-            Acceptable missing values. Missing values will be used to validate
-            all values in the column. Specified missing values can also be
-            ignored during analysis if correctly specified.
-        blanks: str, list, optional
-            Value to represent experimental blanks, if relevent.
-        colormap: str, iterable, optional
-            The colors to use when plotting the data. This can be a matplotlib
-            colormap object or a string describing a matplotlib compatable
-            colormap (i.e. `'RdBu'`).
 
         Raises
         ------
@@ -81,22 +58,18 @@ class Continous(Question):
                           name=name,
                           description=description,
                           dtype=dtype,
-                          clean_name=clean_name,
-                          mimarks=mimarks,
-                          ontology=ontology,
-                          missing=missing,
-                          blanks=blanks,
-                          colormap=colormap,
+                          **kwargs
                           )
 
         o_lower, o_upper = _check_limits(outliers, 'outliers')
         a_lower, a_upper = _check_limits(limits, 'limits')
 
         self.units = units
+        self.magnitude = magnitude
+4
         self.bound_lower = a_lower
         self.bound_upper = a_upper
-        self.outlier_lower = o_lower
-        self.outlier_upper = o_upper
+
         self.type = 'Continous'
         self.sig_figs = sig_figs
 
