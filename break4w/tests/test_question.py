@@ -146,13 +146,6 @@ class QuestionTest(TestCase):
         self.assertEqual(log_['transformation'],
                          'metaphysical goalie johnson > Bitty')
 
-    def test_analysis_mask_missing(self):
-        self.q.missing = {'Bitty'}
-        self.q.analysis_mask_missing(self.map_)
-        pdt.assert_series_equal(pd.Series([np.nan, 'Ransom', 'Holster'],
-                                          name='player_name'),
-                                self.map_['player_name'])
-
     def test_write_provenance(self):
         known_log = pd.DataFrame(
             np.array([[datetime.datetime.now(), 'Write Log', 'team_captain',

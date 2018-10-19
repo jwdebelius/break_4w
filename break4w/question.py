@@ -206,30 +206,6 @@ class Question:
         else:
             return [str_]
 
-    def analysis_mask_missing(self, map_):
-        """
-        Remaps known missing values with pandas friendly nans
-
-        Parameters
-        ----------
-        map_ : DataFrame
-            A pandas DataFrame containing the metadata being analyzed. The
-            question object describes a column within the `map_`.
-        """
-
-        def remap_(x):
-            if x in self.missing:
-                return np.nan
-            else:
-                return x
-
-        map_[self.name] = map_[self.name].apply(remap_)
-        self._update_log("Mask missing values", "replace", '%s > np.nan'
-                         % ';'.join(list(self.missing)))
-
-    def analysis_mask_ambigious(self, map_):
-        pass
-
     def write_provenance(self):
         """Writes the question provenance to a string
 
