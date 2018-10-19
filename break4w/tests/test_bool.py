@@ -42,32 +42,6 @@ class BoolTest(TestCase):
         self.assertEqual(self.b.order, ['True', 'False'])
         self.assertEqual(self.b.ambiguous, {'TBD'})
 
-    def test_analysis_convert_to_word_pass(self):
-        self.map_.loc['Holster', 'team_captain'] = np.nan
-        self.b.analysis_remap_dtype(self.map_)
-        self.b.analysis_convert_to_word(self.map_)
-
-        pdt.assert_series_equal(
-            self.map_['team_captain'],
-            pd.Series(['TBD', 'yes', np.nan, 'no'],
-                      index=['Bitty', 'Ransom', 'Holster', 'Johnson'],
-                      name='team_captain')
-            )
-        log_entry = self.b.log[1]
-        self.assertEqual(log_entry['command'], 'convert boolean')
-        self.assertEqual(log_entry['transform_type'], 'replace')
-        self.assertEqual(log_entry['transformation'], 'standarize to yes/no')
-
-    def test_analysis_convert_to_word_fail(self):
-        with self.assertRaises(ValueError):
-            self.b.analysis_convert_to_word(self.map_)
-
-        log_entry = self.b.log[0]
-        self.assertEqual(log_entry['command'], 'convert boolean')
-        self.assertEqual(log_entry['transform_type'], 'replace')
-        self.assertEqual(log_entry['transformation'],
-                         'data could not be standardized')
-
     def test_validate_pass(self):
         self.b.validate(self.map_)
 
@@ -77,13 +51,12 @@ class BoolTest(TestCase):
                  'dtype': bool,
                  'ambiguous': {'TBD'},
                  'order': self.bool,
-                 'extremes': self.bool,
                  'clean_name': 'Team Captain',
+                 'ref_val': 'False',
                  }
         type_, test = self.b.to_dict()
         self.assertEqual(type_, 'bool')
         self.assertEqual(test, known)
-
 
 
 if __name__ == '__main__':
