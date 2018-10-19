@@ -5,7 +5,7 @@ from break4w.categorical import Categorical
 
 class Bool(Categorical):
     def __init__(self, name, description, clean_name=None, bool_format=None,
-                 reference_val=None, **kwargs):
+                 ref_value=None, **kwargs):
         """A question object for boolean question
 
         Parameters
@@ -53,8 +53,8 @@ class Bool(Categorical):
             t_format = 'true'
             f_format = 'false'
 
-        if reference_val is None:
-            reference_val = f_format
+        if ref_value is None:
+            ref_value = f_format
 
         Categorical.__init__(self,
                              name=name,
@@ -62,7 +62,7 @@ class Bool(Categorical):
                              dtype=bool,
                              order=[t_format, f_format],
                              clean_name=clean_name,
-                             reference_val=reference_val,
+                             ref_value=ref_value,
                              **kwargs
                              )
         self.type = 'Bool'

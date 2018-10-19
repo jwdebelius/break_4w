@@ -512,8 +512,14 @@ class DataDictionary(OrderedDict):
             part_ = _split_numeric_mapping(var_['order'], 
                                            split_code=read_numeric_codes)
 
-            if isinstance(part_)
-            
+            if isinstance(part_, dict) and type_ in {'Categorical', 'Bool'}:
+                if isinstance(part_.key()[0], dtype_):
+                    var_['order'] = [k for k in part_.keys()] 
+                elif isinstance(part_.value()[0], dtype_):
+                    var_['order'] = [k for k in part_.keys()]
+                else:
+                    raise ValueError('The dtype in order in %s must match the '
+                                     'dtype of the column.' % name_)
             
             # Handles continous variables
             if type_ == 'Continous':

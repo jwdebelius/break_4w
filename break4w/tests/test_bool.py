@@ -52,7 +52,7 @@ class BoolTest(TestCase):
                  'ambiguous': {'TBD'},
                  'order': self.bool,
                  'clean_name': 'Team Captain',
-                 'ref_val': 'False',
+                 'ref_value': 'False',
                  }
         type_, test = self.b.to_dict()
         self.assertEqual(type_, 'bool')
