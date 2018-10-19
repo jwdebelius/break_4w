@@ -3,14 +3,14 @@ import copy
 import numpy as np
 import pandas as pd
 
-from break4w.question import Question, _identify_remap_function
+from break4w.question import Question
 
 
 class Categorical(Question):
 
     def __init__(self, name, description, dtype, order, reference_val=None,
         ambiguous=None, frequency_cutoff=None, numeric_mapping=None,
-        ordinal=False, code_delim='=' **kwargs):
+        ordinal=False, code_delim='=', **kwargs):
         u"""
         A question object for categorical or ordinal questions
 
@@ -120,28 +120,23 @@ class Categorical(Question):
         self.type = 'Categorical'
 
         self.order = order
+        if reference_val is None:
+            self.ref_val = order[0]
+        else:
+            self.ref_val = reference_val
 
-        self.ref_val = reference_val
+        # if self.
+        # self.var_numeric = 
 
         self.frequency_cutoff = frequency_cutoff
 
         if ambiguous == None:
             self.ambiguous = None
-        elif (isinstance(ambiguous, str) and (code_delim in ambiguous) and
-             (var_delimiter in ambiguous)):
-            self.ambiguous = {
-                amb_.split(code_delim)[0]: amb_.split(code_delim)[1]
-                for amb_ in ambiguous.split(var_delimiter)
-                }
-        elif (isinstance(ambiguous, str) and (code_delim in ambiguous)):
-            self.ambiguous = {num_: str_ 
-                         for num_, str_ in ambiguous.split(code_delim)}
-        elif (isinstance(ambiguous, str) and (var_delimiter in ambiguous)):
-            self.ambiguous = set([])
-
-            self.ambiguous = set([ambiguous])
         else:
-            self.ambiguous = set(ambiguous)
+            ambig = self._split_numeric_mapping(ambiguous)
+            if isinstance(ambig, list):
+                ambig = set(ambig)
+            self.ambiguous = ambig
 
     def _update_order(self, remap_):
         """Updates the order and earlier order arguments
@@ -303,11 +298,11 @@ class Categorical(Question):
 
         placeholders = self.missing.union(blanks).union(ambiguous)
 
-        remap_ = _identify_remap_function(dtype=self.dtype,
-                                          placeholders=placeholders,
-                                          true_values=self.true_values,
-                                          false_values=self.false_values,
-                                          )
+        remap_ = self._identify_remap_function(dtype=self.dtype,
+                                               placeholders=placeholders,
+                                               true_values=self.true_values,
+                                               false_values=self.false_values,
+                                               )
         iseries = map_[self.name].copy()
         oseries = iseries.apply(remap_)
 
@@ -400,11 +395,11 @@ class Categorical(Question):
             ambiguous = set([])
 
         placeholders = self.missing.union(blanks).union(ambiguous)
-        f_ = _identify_remap_function(dtype=self.dtype,
-                                      placeholders=placeholders,
-                                      true_values=self.true_values,
-                                      false_values=self.false_values,
-                                      )
+        f_ = self._identify_remap_function(dtype=self.dtype,
+                                           placeholders=placeholders,
+                                           true_values=self.true_values,
+                                           false_values=self.false_values,
+                                          )
         dseries = iseries.apply(f_)
         new_order = [f_(o) for o in self.order]
 
