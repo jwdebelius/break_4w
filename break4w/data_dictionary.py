@@ -1,10 +1,11 @@
 from collections import OrderedDict
 import datetime
+import pydoc
 
 import numpy as np
 import pandas as pd
 
-from break4w.question import Question
+from break4w.question import Question, _split_numeric_mapping
 from break4w.categorical import Categorical
 from break4w.bool import Bool
 from break4w.continous import Continous
@@ -499,38 +500,29 @@ class DataDictionary(OrderedDict):
             type_ = var_['type']
             var_.drop('type', inplace=True)
 
+            print(type_)
+
             # Cleans up the data type
-            dtype_ = exec(var['dtype'])
-            var_['dtype'] = dtype
+            dtype_ = pydoc.locate(var_['dtype'])
+            var_['dtype'] = dtype_
+
+            # If theres a possibility of value seperation with numeric coding
+            # and the coding delimiter is present, the data gets split into
+            # the numeric remapping 
+            part_ = _split_numeric_mapping(var_['order'], 
+                                           split_code=read_numeric_codes)
+
+            if isinstance(part_)
+            
             
             # Handles continous variables
             if type_ == 'Continous':
-                var_['limits'] = [
-                    dtype_(a) for a in var_['order'].split(val_delim)
-                ]
+                var_['limits'] = var_['order']
+
                 var_['outliers'] = [
                     dtype_(a) for a in var_['ambiguous'].split(val_delim)
                 ]
                 var_.drop(['order', 'ambiguous'], inplace=True)
-            
-            # If theres a possibility of value seperation with numeric coding
-            # and the coding delimiter is present, the data gets split into
-            # the numeric remapping 
-            if read_numeric_codes and map_delim in var_['order']:
-                var_['numeric_mapping'] = {
-                    v.split(map_delim)[0]: v.split(map_delim)[1]
-                    for v in var_['order'].split(val_delim)
-                }
-                var_['order'] = [
-                    v for v in var_['numeric_mapping'].values()
-                ]
-                var_['ordinal'] = True
-        
-            # Otherwise pulls out the values as order
-            else:
-                var_['order'] = [
-                    dtype(v) for v in var_['order'].split(val_delim)
-                ]
 
             # Updates the column and type objects
             types.append(type_)

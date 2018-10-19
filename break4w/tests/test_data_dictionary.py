@@ -462,6 +462,31 @@ class DictionaryTest(TestCase):
         self.assertEqual(test_desc, self.desc)
         self.assertEqual(known_vars, test_vars)
 
+    def test_read_dataframe(self):
+        columns = ['years_on_team', 'team_captain', 'position', 'nickname']
+        df_ = pd.DataFrame(
+            data=[columns,
+                  [c['description'] for c in self.columns],
+                  ['int', 'bool', 'str', 'str'],
+                  ['Continous', 'Bool', 'Categorical', 'Question'],
+                  ['Years On Team', 'Team Captain', 'Position', 'Nickname'],
+                  ['years', np.nan, np.nan, np.nan],
+                  [np.nan, 'TBD', np.nan, np.nan],
+                  ['1 | None', 'true | false', 'Striker | D-man | Goalie', 
+                   np.nan],
+                  [np.nan, np.nan, np.nan, '1=Bitty | 2=Ransom | 3=Holster'],
+                  [np.nan, 'false', 'Striker', np.nan],
+                  ],
+            index=['name', 'description', 'dtype', 'type', 'clean_name', 
+                   'units', 'missing', 'order', 'var_numeric', 'ref_val']
+            ).T
+        df_.set_index('name', inplace=True)
+        test_ = DataDictionary.read_dataframe(df_.loc[['years_on_team']], description='test?')
+
+        # Checks the initiation
+        # self.assertEqual(test_.description, 'test?')
+
+
 
 if __name__ == '__main__':
     main()

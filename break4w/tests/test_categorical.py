@@ -40,11 +40,32 @@ class CategoricalTest(TestCase):
         self.assertEqual(self.order, test.order)
         self.assertEqual(test.type, 'Categorical')
         self.assertEqual(test.frequency_cutoff, None)
+        self.assertEqual(test.ref_value, self.order[0])
+        self.assertEqual(test.var_numeric, None)
+        self.assertEqual(test.var_labels, None)
+        self.assertEqual(test.ambiguous, None)
 
     def test_categorical_init_error(self):
         with self.assertRaises(ValueError):
             Categorical(self.name, self.description, order=self.order,
                         dtype=ValueError)
+
+    def test_categorical_numeric_ambig_str(self):
+        test = Categorical(self.name,
+                           self.description,
+                           int,
+                           self.order,
+                           ambiguous='manager',
+                           var_labels='1=Striker | 2=D-man | 3=Goalie',
+                           ref_value='coach',
+                           )
+        self.assertEqual(test.var_numeric, 
+                         {'Striker': 1, 'D-man': 2, 'Goalie': 3})
+        self.assertEqual(test.var_labels, 
+                         {1: 'Striker', 2: 'D-man', 3: 'Goalie'})
+        self.assertEqual(test.ambiguous, set(['manager']))
+        self.assertEqual(test.ref_value, 'coach')
+
 
     def test_update_order(self):
         # Checks the current order
@@ -118,7 +139,7 @@ class CategoricalTest(TestCase):
                  'dtype': self.dtype,
                  'clean_name': 'Position',
                  'order': self.order,
-                 'ref_val': 'Striker',
+                 'ref_value': 'Striker',
                  }
         type_, test = self.c.to_dict()
 

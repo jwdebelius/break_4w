@@ -8,7 +8,7 @@ import numpy.testing as npt
 import pandas.util.testing as pdt
 
 from break4w.question import (Question,
-                              # _identify_remap_function,
+                              _split_numeric_mapping,
                               )
 
 
@@ -229,19 +229,23 @@ class QuestionTest(TestCase):
         tseries = iseries.apply(f_)
         pdt.assert_series_equal(kseries, tseries)
 
+    def test_split_numeric_mapping_nan(self):
+        test_ = _split_numeric_mapping(np.nan)
+        self.assertTrue(test_ is None)
+
     def test_split_numeric_mapping_both(self):
         known = {0: 'Dorm', 1: 'Haus'}
-        test_ = self.q._split_numeric_mapping('0=Dorm | 1=Haus')
+        test_ = _split_numeric_mapping('0=Dorm | 1=Haus')
         self.assertEqual(known, test_)
 
     def test_split_numeric_mapping_var(self):
         known = ['Dorm', 'Haus']
-        test_ = self.q._split_numeric_mapping('Dorm | Haus')
+        test_ = _split_numeric_mapping('Dorm | Haus')
         self.assertEqual(known, test_)
 
     def test_split_numeric_mapping_var(self):
         known = ['Boston']
-        test_ = self.q._split_numeric_mapping('Boston')
+        test_ = _split_numeric_mapping('Boston')
         self.assertEqual(known, test_)
 
     def test_to_dict(self):

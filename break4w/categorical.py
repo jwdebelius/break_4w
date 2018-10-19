@@ -3,13 +3,13 @@ import copy
 import numpy as np
 import pandas as pd
 
-from break4w.question import Question
+from break4w.question import Question, _split_numeric_mapping
 
 
 class Categorical(Question):
 
-    def __init__(self, name, description, dtype, order, reference_val=None,
-        ambiguous=None, frequency_cutoff=None, numeric_mapping=None,
+    def __init__(self, name, description, dtype, order, ref_value=None,
+        ambiguous=None, frequency_cutoff=None, var_labels=None,
         ordinal=False, code_delim='=', **kwargs):
         u"""
         A question object for categorical or ordinal questions
@@ -53,7 +53,7 @@ class Categorical(Question):
             in an analysis. For example, if a value is only represented twice
             in a question, that value may not be appropriate for most
             standard statistical tests.
-        name_mapping: dict, optional
+        var_labels: dict, optional
             A dictionary of values which map the name of the values to a
             numeric code (i.e. if female is coded as 0, male is coded as 1,
             and other is coded as 2, then the dictionary would be
@@ -120,16 +120,20 @@ class Categorical(Question):
         self.type = 'Categorical'
 
         self.order = order
-        if reference_val is None:
-            self.ref_val = order[0]
+        if ref_value is None:
+            self.ref_value = order[0]
         else:
-            self.ref_val = reference_val
+            self.ref_value = ref_value
 
-        if numeric_mapping is not None:
-            self.var_numeric = numeric_mapping
-            self.var_label = {g: i for g, i in numeric_mapping.items()}
+        if isinstance(var_labels, dict):
+            self.var_labels = var_labels
+            self.var_numeric = {g: i for i, g in self.var_labels.items()}
+        elif isinstance(var_labels, str):
+            self.var_labels = \
+                _split_numeric_mapping(var_labels, code_delim)
+            self.var_numeric = {g: i for i, g in self.var_labels.items()}
         else:
-            self.var_label = None
+            self.var_labels = None
             self.var_numeric = None
 
         self.frequency_cutoff = frequency_cutoff
@@ -137,7 +141,7 @@ class Categorical(Question):
         if ambiguous == None:
             self.ambiguous = None
         else:
-            ambig = self._split_numeric_mapping(ambiguous)
+            ambig = _split_numeric_mapping(ambiguous)
             if isinstance(ambig, list):
                 ambig = set(ambig)
             self.ambiguous = ambig

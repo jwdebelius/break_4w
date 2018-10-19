@@ -192,19 +192,7 @@ class Question:
             'transform_type': transform_type,
             'transformation': transformation,
             })
-
-    @staticmethod
-    def _split_numeric_mapping(str_, code_delim='=', var_delim=' | '):
-        """
-        Parses a string with order and variable delimiters
-        """
-        if (code_delim in str_):
-            return {int(amb_.split(code_delim)[0]): amb_.split(code_delim)[1]
-                    for amb_ in str_.split(var_delim)}
-        elif (var_delim in str_):
-            return [val_ for val_ in str_.split(var_delim)]
-        else:
-            return [str_]
+    
 
     def write_provenance(self):
         """Writes the question provenance to a string
@@ -360,4 +348,18 @@ class Question:
 
         return remap_
 
+def _split_numeric_mapping(str_, code_delim='=', var_delim=' | ', 
+                           split_code=True):
+        """
+        Parses a string with order and variable delimiters
+        """
+        if pd.isnull(str_):
+            return None
+        elif (code_delim in str_) and split_code:
+            return {int(amb_.split(code_delim)[0]): amb_.split(code_delim)[1]
+                    for amb_ in str_.split(var_delim)}
+        elif (var_delim in str_):
+            return [val_ for val_ in str_.split(var_delim)]
+        else:
+            return [str_]
 
