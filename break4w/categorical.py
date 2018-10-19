@@ -3,14 +3,14 @@ import copy
 import numpy as np
 import pandas as pd
 
-from break4w.question import Question, _identify_remap_function
+from break4w.question import Question
 
 
 class Categorical(Question):
 
     def __init__(self, name, description, dtype, order, reference_val=None,
         ambiguous=None, frequency_cutoff=None, numeric_mapping=None,
-        ordinal=False, code_delim='=' **kwargs):
+        ordinal=False, code_delim='=', **kwargs):
         u"""
         A question object for categorical or ordinal questions
 
@@ -121,27 +121,26 @@ class Categorical(Question):
 
         self.order = order
 
+        if numeric_mapping is not None:
+            self.var_numbers = numeric_mapping
+            self.var_labels = {g: i for i, g in self.var_numbers.items()}
+        else:
+            self.var_numbers = None
+            self.var_labels = None
+
         self.ref_val = reference_val
 
         self.frequency_cutoff = frequency_cutoff
 
         if ambiguous == None:
             self.ambiguous = None
-        elif (isinstance(ambiguous, str) and (code_delim in ambiguous) and
-             (var_delimiter in ambiguous)):
-            self.ambiguous = {
-                amb_.split(code_delim)[0]: amb_.split(code_delim)[1]
-                for amb_ in ambiguous.split(var_delimiter)
-                }
-        elif (isinstance(ambiguous, str) and (code_delim in ambiguous)):
-            self.ambiguous = {num_: str_ 
-                         for num_, str_ in ambiguous.split(code_delim)}
-        elif (isinstance(ambiguous, str) and (var_delimiter in ambiguous)):
-            self.ambiguous = set([])
-
-            self.ambiguous = set([ambiguous])
         else:
-            self.ambiguous = set(ambiguous)
+            ambig = self._split_numeric_mapping(ambiguous)
+            if isinstance(ambig, (dict, set)):
+                self.ambiguous = ambig
+            else:
+                self.ambiguous = set(ambiguous)
+
 
     def _update_order(self, remap_):
         """Updates the order and earlier order arguments
@@ -202,78 +201,77 @@ class Categorical(Question):
             Question `name` should be a column in the `map_`.
 
         """
-        if self.name_mapping is None:
-            self._update_log('convert to label', 'error',
-                             'There is no way to map codes to labels')
-            raise ValueError('There is no way to map codes to labels')
+        if self.var_labels is None:
+            self.var_labels = {g: i for i, g in enumerate(self.order)}
+        if self.var_numbers is None:
+            self.var_numbers = {i: g for i, g in enumerate(self.order)}
 
-        if self.numeric_mapping is None:
-            self.numeric_mapping = {g: i for (i, g)
-                                    in self.name_mapping.items()}
 
         def remap_(x):
-            if x in self.name_mapping:
-                return self.name_mapping[x]
+            if isinstance(x, str):
+                return x
+            if x in self.var_numbers:
+                return self.var_numbers[x]
             else:
                 return np.nan
 
         self.analysis_apply_conversion(map_, remap_,
                                        command_name='convert code to label')
 
-    def analysis_convert_to_numeric(self, map_):
-        """
-        Converts the values in each group into integers based on `order`
+    # def analysis_convert_to_numeric(self, map_):
+    #     """
+    #     Converts the values in each group into integers based on `order`
 
-        Parameters
-        ----------
-        map_ : DataFrame
-            A pandas object containing the data to be analyzed. The
-            Question `name` should be a column in the `map_`.
+    #     Parameters
+    #     ----------
+    #     map_ : DataFrame
+    #         A pandas object containing the data to be analyzed. The
+    #         Question `name` should be a column in the `map_`.
 
-        """
-        mapping = {g: i for i, g in enumerate(self.order)}
-        if self.numeric_mapping is None:
-            self.numeric_mapping = mapping
-        self.name_mapping = {i: g for (i, g) in enumerate(self.order)}
+    #     """
+    #     if self.var_labels is None:
+    #         self.var_labels = {g: i for i, g in enumerate(self.order)}
+    #     if self.var_numbers is None:
+    #         self.var_numbers = {i: g for i, g in enumerate(self.order)}
 
-        def remap_(x):
-            if isinstance(x, (int, float)):
-                return x
-            elif x in mapping:
-                return mapping[x]
-            else:
-                return np.nan
+    #     def remap_(x):
+    #         if isinstance(x, (int, float)):
+    #             return x
+    #         elif x in self.var_labels:
+    #             return self.var_labels[x]
+    #         else:
+    #             return np.nan
 
-        self.analysis_apply_conversion(map_, remap_,
-                                       command_name='convert label to code')
+    #     self.analysis_apply_conversion(map_, remap_,
+    #                                    command_name='convert label to code')
 
-    def analysis_drop_infrequent(self, map_):
-        """
-        Replaces any value from a group below the frequency cutoff with null
+    # def analysis_drop_infrequent(self, map_):
+    #     """
+    #     Replaces any value from a group below the frequency cutoff with null
 
-        Parameters
-        ----------
-        map_ : DataFrame
-            A pandas object containing the data to be analyzed. The
-            Question `name` should be a column in the `map_`.
+    #     Parameters
+    #     ----------
+    #     map_ : DataFrame
+    #         A pandas object containing the data to be analyzed. The
+    #         Question `name` should be a column in the `map_`.
 
-        """
+    #     """
 
-        counts = map_.groupby(self.name).count().max(1)[self.order]
-        below_locs = (counts <= self.frequency_cutoff) | pd.isnull(counts)
-        below = counts.loc[below_locs].index
+    #     counts = map_.groupby(self.name).count().max(1)[self.order]
+    #     below_locs = (counts <= self.frequency_cutoff) | pd.isnull(counts)
+    #     below = counts.loc[below_locs].index
 
-        def remap_(x):
-            if x in below:
-                return np.nan
-            else:
-                return x
+    #     def remap_(x):
+    #         if x in below:
+    #             return np.nan
+    #         else:
+    #             return x
 
-        self.analysis_apply_conversion(map_, remap_,
-                                       command_name=False,
-                                       loggable=False)
-        self._update_log('drop infrequent values', 'drop', 'below %i: %s'
-                         % (self.frequency_cutoff, ' | '.join(sorted(below))))
+    #     self.analysis_apply_conversion(map_, remap_,
+    #                                    command_name=False,
+    #                                    loggable=False)
+    #     self._update_log('drop infrequent values', 'drop', 'below %i: %s'
+    #                      % (self.frequency_cutoff, ' | '.join(sorted(below))))
 
     def analysis_remap_dtype(self, map_):
         """Converts values in the question column to the correct datatype
@@ -303,11 +301,11 @@ class Categorical(Question):
 
         placeholders = self.missing.union(blanks).union(ambiguous)
 
-        remap_ = _identify_remap_function(dtype=self.dtype,
-                                          placeholders=placeholders,
-                                          true_values=self.true_values,
-                                          false_values=self.false_values,
-                                          )
+        remap_ = self._identify_remap_function(dtype=self.dtype,
+                                               placeholders=placeholders,
+                                               true_values=self.true_values,
+                                               false_values=self.false_values,
+                                               )
         iseries = map_[self.name].copy()
         oseries = iseries.apply(remap_)
 
@@ -328,110 +326,110 @@ class Categorical(Question):
             )
         self._update_log('transformation', 'cast data type', message)
 
-    def analysis_remap_null(self, map_):
-        """Converts approved null values to nans for analysis
+    # def analysis_remap_null(self, map_):
+    #     """Converts approved null values to nans for analysis
 
-        Parameters
-        ----------
-        map_ : DataFrame
-            A pandas object containing the data to be analyzed. The
-            Question `name` should be a column in the `map_`.
+    #     Parameters
+    #     ----------
+    #     map_ : DataFrame
+    #         A pandas object containing the data to be analyzed. The
+    #         Question `name` should be a column in the `map_`.
 
-        """
-        map_[self.name].replace(self.missing, np.nan, inplace=True)
-        for m in self.missing:
-            if m in self.order:
-                self.order.remove(m)
-        self._update_log('correct null values', 'drop',
-                         ' | '.join(list(self.missing)))
+    #     """
+    #     map_[self.name].replace(self.missing, np.nan, inplace=True)
+    #     for m in self.missing:
+    #         if m in self.order:
+    #             self.order.remove(m)
+    #     self._update_log('correct null values', 'drop',
+    #                      ' | '.join(list(self.missing)))
 
-    def analyis_remove_ambiguous(self, map_):
-        """
-        Replaces ambiguous values in the metadata with nulls
+    # def analyis_remove_ambiguous(self, map_):
+    #     """
+    #     Replaces ambiguous values in the metadata with nulls
 
-        Parameters
-        ----------
-        map_ : DataFrame
-            A pandas object containing the data to be analyzed. The
-            Question `name` should be a column in the `map_`.
+    #     Parameters
+    #     ----------
+    #     map_ : DataFrame
+    #         A pandas object containing the data to be analyzed. The
+    #         Question `name` should be a column in the `map_`.
 
-        """
+    #     """
 
-        def _remap(x):
-            if pd.isnull(x) or (x is None):
-                return np.nan
-            elif x in self.ambiguous:
-                return np.nan
-            else:
-                return x
+    #     def _remap(x):
+    #         if pd.isnull(x) or (x is None):
+    #             return np.nan
+    #         elif x in self.ambiguous:
+    #             return np.nan
+    #         else:
+    #             return x
 
-        if self.ambiguous is not None:
-            map_[self.name] = map_[self.name].apply(_remap)
-            self._update_order(_remap)
-        self._update_log('remove ambiguous values', 'drop',
-                         ' | '.join([v for v in self.ambiguous]))
+    #     if self.ambiguous is not None:
+    #         map_[self.name] = map_[self.name].apply(_remap)
+    #         self._update_order(_remap)
+    #     self._update_log('remove ambiguous values', 'drop',
+    #                      ' | '.join([v for v in self.ambiguous]))
 
-    def validate(self, map_):
-        """Checks the values in the mapping file are correct
+    # def validate(self, map_):
+    #     """Checks the values in the mapping file are correct
 
-         Parameters
-        ----------
-        map_ : DataFrame
-            A pandas object containing the data to be analyzed. The
-            Question `name` should be a column in the `map_`.
+    #      Parameters
+    #     ----------
+    #     map_ : DataFrame
+    #         A pandas object containing the data to be analyzed. The
+    #         Question `name` should be a column in the `map_`.
 
-        Raises
-        ------
-        ValueError
-            If the values in the mapping file are not acceptable values
-            for the question (given by order) or acceptable missing values.
+    #     Raises
+    #     ------
+    #     ValueError
+    #         If the values in the mapping file are not acceptable values
+    #         for the question (given by order) or acceptable missing values.
 
-        """
-        # Gets the data to check
-        iseries = map_[self.name].copy()
-        message = []
+    #     """
+    #     # Gets the data to check
+    #     iseries = map_[self.name].copy()
+    #     message = []
 
-        # Attempts to remap the data
-        if self.blanks is None:
-            blanks = set([])
-        if hasattr(self, 'ambiguous') and self.ambiguous is not None:
-            ambiguous = self.ambiguous
-        else:
-            ambiguous = set([])
+    #     # Attempts to remap the data
+    #     if self.blanks is None:
+    #         blanks = set([])
+    #     if hasattr(self, 'ambiguous') and self.ambiguous is not None:
+    #         ambiguous = self.ambiguous
+    #     else:
+    #         ambiguous = set([])
 
-        placeholders = self.missing.union(blanks).union(ambiguous)
-        f_ = _identify_remap_function(dtype=self.dtype,
-                                      placeholders=placeholders,
-                                      true_values=self.true_values,
-                                      false_values=self.false_values,
-                                      )
-        dseries = iseries.apply(f_)
-        new_order = [f_(o) for o in self.order]
+    #     placeholders = self.missing.union(blanks).union(ambiguous)
+    #     f_ = self._identify_remap_function(dtype=self.dtype,
+    #                                        placeholders=placeholders,
+    #                                        true_values=self.true_values,
+    #                                        false_values=self.false_values,
+    #                                        )
+    #     dseries = iseries.apply(f_)
+    #     new_order = [f_(o) for o in self.order]
 
-        if dseries.apply(lambda x: x == 'error').any():
-            message = (
-                'the data cannot be cast to %s'
-                % (str(self.dtype).replace("<class '", '').replace("'>", ''))
-                )
-            self._update_log('validate', 'error', message)
-            raise TypeError(message)
-        else:
-            self._update_log(
-                'validate', 'pass', 'the data can be cast to %s'
-                % (str(self.dtype).replace("<class '", '').replace("'>", ''))
-                )
+    #     if dseries.apply(lambda x: x == 'error').any():
+    #         message = (
+    #             'the data cannot be cast to %s'
+    #             % (str(self.dtype).replace("<class '", '').replace("'>", ''))
+    #             )
+    #         self._update_log('validate', 'error', message)
+    #         raise TypeError(message)
+    #     else:
+    #         self._update_log(
+    #             'validate', 'pass', 'the data can be cast to %s'
+    #             % (str(self.dtype).replace("<class '", '').replace("'>", ''))
+    #             )
 
-        acceptable_values = placeholders.union(set(new_order))
-        actual_values = set(dseries.unique()) - {np.nan}
+    #     acceptable_values = placeholders.union(set(new_order))
+    #     actual_values = set(dseries.unique()) - {np.nan}
 
-        if not acceptable_values.issuperset(actual_values):
-            descriptor = ['%s' % v
-                          for v in sorted((actual_values - acceptable_values))]
-            m_ = 'The following are not valid values: %s' \
-                % (' | '.join(descriptor))
-            message.append(m_)
-            self._update_log('validate', 'error', '\n'.join(message))
-            raise ValueError(m_)
-        else:
-            self._update_log('validate', 'pass', 'all values were valid')
+    #     if not acceptable_values.issuperset(actual_values):
+    #         descriptor = ['%s' % v
+    #                       for v in sorted((actual_values - acceptable_values))]
+    #         m_ = 'The following are not valid values: %s' \
+    #             % (' | '.join(descriptor))
+    #         message.append(m_)
+    #         self._update_log('validate', 'error', '\n'.join(message))
+    #         raise ValueError(m_)
+    #     else:
+    #         self._update_log('validate', 'pass', 'all values were valid')
 

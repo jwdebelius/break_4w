@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from break4w.question import Question, _identify_remap_function
+from break4w.question import Question
 
 
 class Continous(Question):
@@ -235,9 +235,9 @@ class Continous(Question):
 
         placeholders = self.missing.union(blanks)
 
-        remap_ = _identify_remap_function(dtype=self.dtype,
-                                          placeholders=placeholders,
-                                          )
+        remap_ = self._identify_remap_function(dtype=self.dtype,
+                                               placeholders=placeholders,
+                                               )
         iseries = map_[self.name].copy()
         oseries = iseries.apply(remap_)
 
@@ -292,11 +292,11 @@ class Continous(Question):
             ambiguous = set([])
 
         placeholders = self.missing.union(blanks).union(ambiguous)
-        f_ = _identify_remap_function(dtype=self.dtype,
-                                      placeholders=placeholders,
-                                      true_values=self.true_values,
-                                      false_values=self.false_values,
-                                      )
+        f_ = self._identify_remap_function(dtype=self.dtype,
+                                           placeholders=placeholders,
+                                           true_values=self.true_values,
+                                           false_values=self.false_values,
+                                           )
         iseries = iseries.apply(f_)
         if np.any(iseries.apply(lambda x: x == 'error')):
             message = (
