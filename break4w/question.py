@@ -1,28 +1,34 @@
 import datetime
+from functools import partial
 import inspect
+import pydoc
 
 import numpy as np
 import pandas as pd
 
-true_values = {'yes', 'true', 1, 1.0, True}
-false_values = {'no', 'false', 0, 0.0, False}
-ebi_null = {'not applicable',
-            'missing: not provided',
-            'missing: not collected',
-            'missing: restricted',
-            'not provided',
-            'not collected',
-            'restricted',
-            }
 
+properties_str = {'name', 'description', 'clean_name', 'notes', 'units',
+                      'original_name', 'var_labels', 'var_numbers', 'type'}
+properties_num = {'frequency_cutoff', 'bound_lower', 'bound_upper',
+                  'sig_figs', 'magnitude'}
+properties_bin = {'free_response', 'mimarks', 'ordinal'}
+properties_set = {'source_columns', 'ontology', 'derivative_columns', 
+                  'blanks', 'ambigious'}
 
 
 class Question:
     u"""A base object class for handling Data dictionary entries
     """
-    true_values = true_values
-    false_values = false_values
-    ebi_null = ebi_null
+    true_values = {'yes', 'true', 1, 1.0, True}
+    false_values = {'no', 'false', 0, 0.0, False}
+    ebi_null = {'not applicable',
+                'missing: not provided',
+                'missing: not collected',
+                'missing: restricted',
+                'not provided',
+                'not collected',
+                'restricted',
+                }
     defaults = {'missing': ebi_null,
                 'true_values': true_values,
                 'false_values': false_values,
@@ -30,7 +36,8 @@ class Question:
                 'free_response': False,
                 'magnitude': 1,
                 }
-    set_params = {'missing', 'ambigious', ''}
+
+    var_str_format = {str: '%s', int: '%i', float: '%1.5f', bool: '%s'}
 
     def __init__(self, name, description, dtype, clean_name=None,
         free_response=False, mimarks=False, ontology=None,
@@ -158,7 +165,6 @@ class Question:
 
         self.log = []
 
-    
     def __str__(self):
         u"""Prints a nice summary of the object"""
         return '%s (%s)\n\t%s' % (self.name, self.type, self.description)
@@ -193,7 +199,6 @@ class Question:
             'transformation': transformation,
             })
     
-
     def write_provenance(self):
         """Writes the question provenance to a string
 
@@ -224,73 +229,146 @@ class Question:
         """
         raise NotImplementedError
 
-    def to_dict(self):
-        """Converts the question column to a dictionary
+    @staticmethod
+    def _iterable_to_str(val_, code_delim='=', var_delim=' | ', var_str='%s',
+        code_str='%s', null_value=np.nan):
         """
-        tent_dict = self.__dict__.items()
-
-        def _check_dict(k, v):
-            if k in {'log', 'type'}:
-                return False
-            if v is None:
-                return False
-            elif isinstance(v, list) and (len(v) == 0):
-                return False
-            elif ((k in self.defaults) and 
-                (self.defaults[k] == v)):
-                return False
-            else:
-                return True
-
-        return (self.type.lower(), 
-                {k: v for k, v in tent_dict if _check_dict(k, v)})
-
-    def _to_series(self):
+        Converts a list or dict into a delimited string for reading
         """
-        Formats data to be written to tsv
+        if val_ is None:
+            return null_value
+        elif (isinstance(val_, (list, set, tuple, np.ndarray, dict)) and 
+             len(val_) == 0):
+            return null_value
+        if isinstance(val_, (list, set, tuple, np.ndarray)):
+            return var_delim.join([var_str % v for v in val_])
+        elif isinstance(val_, dict):
+            return var_delim.join([
+                ('%s%s%s' % (var_str, code_delim, code_str )) % (k, v)
+                 for k, v in val_.items()
+                ])
+        else:
+            return str(val_).replace("<class '", '').replace("'>", "")
 
-        Parameters
-        ----------
-        write_numeric_codes: bool, optional
-
+    @staticmethod
+    def _iterable_from_str(val_, code_delim='=', var_delim=' | ', 
+        var_type=str, code_type=str, null_value=np.nan, return_type=set):
         """
+        Converts a delimited string into a list or dict
+        """ 
+        if val_ is None or (val_ in {null_value, 'None'}):
+            return None
+        elif code_delim in val_:
+            def get_k(v):
+                return var_type(v.split(code_delim)[0])
+            def get_v(v):
+                return code_type(v.split(code_delim)[1])
+            return {get_k(x): get_v(x) for x in val_.split(var_delim)}
+        elif var_delim in val_:
+            return return_type([var_type(x) for x in val_.split(var_delim)])
+        else:
+            return return_type([var_type(val_)])
+
+    def _to_series(self, code_delim='=', var_delim=' | ', 
+        var_str=None, code_str='%s', null_value=np.nan):
+        """Formats data as a series of text values"""
+
         tent_dict = self.__dict__.items()
 
         def _check_dict(k, v):
             if k in {'log'}:
                 return False
-            if v is None:
+            if (v is None) or (isinstance(v, list) and (len(v) == 0)):
                 return False
-            elif isinstance(v, list) and (len(v) == 0):
-                return False
-            elif ((k in self.defaults) and 
-                (self.defaults[k] == v)):
+            elif ((k in self.defaults) and (self.defaults[k] == v)):
                 return False
             else:
                 return True
 
-        def _format_value(v):
-            if isinstance(v, list):
-                return ' | '.join([str(x) for x in v])
-                return ' | '.join(v)
-            elif isinstance(v, (set, tuple)):
-                return ' | '.join([str(x) for x in v])
-            elif isinstance(v, dict):
-                return ' | '.join(['%s=%s' % (x, y) for x, y in v.items()])
+        if var_str is None:
+            var_str = self.var_str_format[self.dtype] 
+
+        f_ = partial(self._iterable_to_str, code_delim=code_delim, 
+                     var_delim=var_delim, var_str=var_str, code_str=code_str, 
+                     null_value=null_value)
+
+        return pd.Series({k: f_(v) for k, v in tent_dict 
+                         if _check_dict(k, v)})
+
+    @classmethod
+    def _read_series(cls, var_, var_delim=' | ', code_delim='=', 
+                     null_value=None):
+        """
+        Builds a question object off a series
+
+        Parameters
+        ----------
+        var_: Series
+            The series containing the parameters
+        read_numeric_codes: bool, optional
+            Whether columns should be read with a numerical delimiter (i.e
+            "=") to parse a numeric value into a categorical one. For example,
+            if numeric is true, then "0=female | 1=male" would be parsed that
+            any data encoded as 0 maps to female, any data encoded as 1 maps
+            to male, and the order of hte values is `[0, 1]` (corresponding to
+            `['female', 'male']`). Otherwise, the line would be read
+            literally, and the order is read as `["0=female", "1=male"]`.
+        var_delim: str, optional
+            The seperator between values in the "order" column.
+        code_delim: str, optional
+            The delimiter between a numericly coded categorical variable and
+            the value it maps to.
+
+        Returns
+        -------
+        Question
+
+        """
+        # Drops out type, if necessary
+        if 'type' in var_:
+            var_.drop('type', inplace=True)
+
+        # Extracts the datatype
+        dtype_ = pydoc.locate(var_['dtype'])
+        var_['dtype'] = dtype_
+
+        i_param = {'code_delim': code_delim, 
+                    'var_delim': var_delim, 
+                    'null_value': null_value,
+                    'var_type': dtype_}
+
+        def _handle_col(k, v):
+            if pd.isnull(v) or v == str(null_value):
+                return None
+            if k == 'colormap':
+                return check_cmap(v)
+            elif k == 'ref_value':
+                return dtype_(v)
+            elif k == 'order':
+                return cls._iterable_from_str(v, return_type=list, **i_param)
+            elif k in properties_num:
+                return float(v)
+            elif k in properties_bin:
+                return (v.lower() in cls.true_values)
+            elif k in properties_set:
+                return cls._iterable_from_str(v, **i_param)
             else:
-                str_ = str(v)
-                str_1 = str_.replace("<class '", '').replace("'>", "")
-                return str_1
+                return v
 
-        dict_ = {k: _format_value(v) for k, v in tent_dict 
-                 if _check_dict(k, v)}
+        dict_ = {k: _handle_col(k, v) for k, v in var_.iteritems()
+                 if (not (pd.isnull(v) or v == str(null_value)) or 
+                     not k in {'type', 'dtype'})}
 
-        return pd.Series(dict_)
+        if isinstance(dict_['order'], dict):
+            part_ = dict_['order']
+            dict_['order'] = [dtype_(k) for k in part_.keys()] 
+            dict_['var_labels'] = part_
+
+        return cls(**dict_)
 
     @staticmethod
     def _identify_remap_function(dtype, placeholders=None, 
-                                 true_values=true_values,
-                                 false_values=false_values):
+        true_values=true_values, false_values=false_values):
         """
         Selects an appropriate function to convert data from str to dtype
 
@@ -347,6 +425,7 @@ class Question:
                         return 'error'
 
         return remap_
+
 
 def _split_numeric_mapping(str_, code_delim='=', var_delim=' | ', 
                            split_code=True):

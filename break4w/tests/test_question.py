@@ -229,40 +229,47 @@ class QuestionTest(TestCase):
         tseries = iseries.apply(f_)
         pdt.assert_series_equal(kseries, tseries)
 
-    def test_split_numeric_mapping_nan(self):
-        test_ = _split_numeric_mapping(np.nan)
-        self.assertTrue(test_ is None)
+    def test_iterable_to_str_null(self):
+        test = self.q._iterable_to_str(None, null_value='---')
+        self.assertEqual(test, '---')
 
-    def test_split_numeric_mapping_both(self):
-        known = {0: 'Dorm', 1: 'Haus'}
-        test_ = _split_numeric_mapping('0=Dorm | 1=Haus')
-        self.assertEqual(known, test_)
+    def test_iterable_to_str_empty(self):
+        test = self.q._iterable_to_str([])
+        self.assertTrue(np.isnan(test))
 
-    def test_split_numeric_mapping_var(self):
+    def test_iterable_from_str_null(self):
+        test = self.q._iterable_from_str('---', null_value='---')
+        self.assertEqual(test, None)
+
+    def test_iterable_from_str_list(self):
         known = ['Dorm', 'Haus']
-        test_ = _split_numeric_mapping('Dorm | Haus')
+        test_ = self.q._iterable_from_str('Dorm | Haus', return_type=list)
         self.assertEqual(known, test_)
 
-    def test_split_numeric_mapping_var(self):
-        known = ['Boston']
-        test_ = _split_numeric_mapping('Boston')
+    def test_iterable_to_str_list(self):
+        known = 'Dorm | Haus'
+        test_ = self.q._iterable_to_str(['Dorm', 'Haus'])
+        npt.assert_array_equal(np.array(known), np.array(test_))
+
+    def test_iterable_from_str_code(self):
+        known = {0: 'Dorm', 1: 'Haus'}
+        test_ = self.q._iterable_from_str('0=Dorm | 1=Haus', var_type=int)
         self.assertEqual(known, test_)
 
-    def test_to_dict(self):
-        known = {'name': self.name,
-                 'description': self.description,
-                 'dtype': self.dtype,
-                 'free_response': True,
-                 'clean_name': 'Player Name',
-                 }
-        type_, test = self.q.to_dict()
-        self.assertEqual(test, known)
-        self.assertEqual(type_, 'question')
+    def test_iterable_to_str_code(self):
+        known = '0=Dorm | 1=Haus'
+        test_ = self.q._iterable_to_str({0: 'Dorm', 1: 'Haus'})
+        self.assertEqual(known, test_)
+
+    def test_iterable_from_str_var(self):
+        known = set(['Boston'])
+        test_ = self.q._iterable_from_str('Boston')
+        self.assertEqual(known, test_)
 
     def test_to_series(self):
         self.q.order = ['Bitty', 'Ransom', 'Holster']
         self.q.missing = {'TBD'}
-        self.numeric_mapping = {1: 'Bitty', 2: 'Ransom', 3: 'Holster'}
+        self.q.var_labels = {1: 'Bitty', 2: 'Ransom', 3: 'Holster'}
 
         known = pd.Series({'name': self.name,
                            'description': self.description,
@@ -272,12 +279,45 @@ class QuestionTest(TestCase):
                            'free_response': 'True',
                            'missing': "TBD",
                            'order': 'Bitty | Ransom | Holster',
-                           'numeric_mapping': '1=Bitty | 2=Ransom | 3=Holster'
+                           'var_labels': '1=Bitty | 2=Ransom | 3=Holster'
                            })
-        known = known[['name', 'description', 'dtype', 'type', 'clean_name', 
-                       'free_response', 'missing', 'order']]
+        # known = known[['name', 'description', 'dtype', 'type', 'clean_name', 
+        #                'free_response', 'missing', 'order']]
         test_ = self.q._to_series()
         pdt.assert_series_equal(known, test_)
+
+    def test_read_series(self):
+        var_ = pd.Series({'name': self.name,
+                          'description': self.description,
+                          'dtype': 'str',
+                          'clean_name': 'Player Name',
+                          'free_response': 'True',
+                          'missing': "TBD",
+                          'order': 'Bitty=1 | Ransom=2 | Holster=3',
+                           })
+        q = Question._read_series(var_)
+
+        # Checks set values
+        self.assertTrue(isinstance(q, Question))
+        self.assertEqual(self.name, q.name)
+        self.assertEqual(self.description, q.description)
+        self.assertEqual(self.dtype, q.dtype)
+        self.assertEqual('Question', q.type)
+        self.assertTrue(q.free_response)
+        self.assertEqual('Player Name', q.clean_name)
+        self.assertEqual(q.missing, {'TBD'})
+        self.assertEqual(q.order, ['Bitty', 'Ransom', 'Holster'])
+        self.assertEqual(q.var_labels, {'Bitty': '1', 'Ransom': '2', 'Holster': '3'})
+
+        # Checks defaults
+        self.assertFalse(q.mimarks)
+        self.assertEqual(q.ontology, None)
+        self.assertEqual(q.colormap, None)
+        self.assertEqual(q.blanks, None)
+        self.assertEqual(q.log, [])
+        self.assertEqual(q.source_columns, [])
+        self.assertEqual(q.derivative_columns, [])
+        self.assertEqual(q.notes, None)
 
 
 if __name__ == '__main__':
