@@ -1,13 +1,13 @@
 import numpy as np
 import pandas as pd
 
-from break4w.question import Question
+from break4w.question import (Question)
 
 
 class Continous(Question):
 
-    def __init__(self, name, description, units, dtype=float, limits=None,
-                 sig_figs=None, magnitude=1, **kwargs):
+    def __init__(self, name, description, units, dtype=float, limits=None, 
+        sig_figs=None, magnitude=1, **kwargs):
         """A Question object with continous responses
 
         Parameters
@@ -61,48 +61,13 @@ class Continous(Question):
                           **kwargs
                           )
 
-        o_lower, o_upper = _check_limits(outliers, 'outliers')
-        a_lower, a_upper = _check_limits(limits, 'limits')
+        self.limits = self._check_limits(limits, var_name='limits')
 
         self.units = units
         self.magnitude = magnitude
-4
-        self.bound_lower = a_lower
-        self.bound_upper = a_upper
 
         self.type = 'Continous'
         self.sig_figs = sig_figs
-
-    def dictionary_update_outliers(self, outliers):
-        """
-        Updates the bounds for outliers in the metadata column.
-
-        Parameters
-        ----------
-        outliers : two element iterable of numbers, optional
-            The range of values pertinant to analysis. This is seperate form
-            the range of physical values *possible* for the data (provided in)
-            limits.
-            Outlires can be expressed in both directions, or in a single
-            direction, with `None` replacing the missing value. So, for
-            concentration, the limit could be represented as `[0, None]`.
-
-        Raises
-        ------
-        ValueError
-            When the values in `outliers` are not expressed in order (i.e.
-            the first value is larger than the second)
-
-        """
-        ori_lower = self.outlier_lower
-        ori_upper = self.outlier_upper
-        lower, upper = _check_limits(outliers, 'outliers')
-        self.outlier_lower = lower
-        self.outlier_upper = upper
-        self._update_log('update outlier values', 'update dictionary',
-                         'Outlier values have been updated: %s > %s '
-                         'and %s > %s.' % (ori_lower, lower, ori_upper, upper)
-                         )
 
     def validate(self, map_):
         """
@@ -159,33 +124,33 @@ class Continous(Question):
                 % (str(self.dtype).replace("<class '", '').replace("'>", '')))
 
         iseries = iseries.replace(list(placeholders), np.nan).dropna()
+        [lower_, upper_] = self.limits
 
         # Defines the text based on the bounding values
-        if (self.bound_upper is not None) and (self.bound_lower is not None):
+        if (lower_ is not None) and (upper_ is not None):
             update_text = ('The values were between %s and %s %s.'
-                           % (self.bound_lower, self.bound_upper, self.units))
-        elif self.bound_upper is not None:
+                           % (lower_, upper_, self.units))
+        elif upper_ is not None:
             update_text = ('The values were less than or equal to %s %s.'
-                           % (self.bound_upper, self.units))
-        elif self.bound_lower is not None:
+                           % (upper_, self.units))
+        elif lower_ is not None:
             update_text = ('The values were greater than or equal to %s %s.'
-                           % (self.bound_lower, self.units))
+                           % (lower_, self.units))
         else:
             update_text = 'there were no limits specified'
 
         lower_text = ''
         lower_issue = False
-        if (self.bound_lower is not None):
-            if np.any(iseries < self.bound_lower):
-                lower_text = ('less than %s' % self.bound_lower)
+        if (lower_ is not None):
+            if np.any(iseries < lower_):
+                lower_text = ('less than %s' % lower_)
                 lower_issue = True
 
         upper_text = ''
         upper_issue = False
-        if (self.bound_upper is not None):
-            if np.any(iseries > self.bound_upper):
-                upper_text = ('greater than %s'
-                              % (self.bound_upper))
+        if (upper_ is not None):
+            if np.any(iseries > upper_):
+                upper_text = ('greater than %s' % (upper_))
                 upper_issue = True
 
         error = False
@@ -210,91 +175,20 @@ class Continous(Question):
             self._update_log('validate', 'pass',
                              update_text)
 
-    def to_dict(self):
-        """Converts the question column to a dictionary
+    @staticmethod
+    def _check_limits(limits, var_name):
         """
-        tent_dict = self.__dict__.items()
+        A helper function that checks whether the limit value meets the criteria
+        """
+        if limits is not None:
+                lower, upper = limits
+                if ((lower is not None) and (upper is not None) and
+                        (lower > upper)):
+                    raise ValueError('The lower limit cannot be greater than '
+                                     'the upper for %s.')
+        else:
+            lower, upper = (None, None)
 
-        def _check_dict(k, v):
-            if k in {'log', 'type', 'bound_lower', 'bound_upper', 
-                     'outlier_lower', 'outlier_upper'}:
-                return False
-            if v is None:
-                return False
-            elif isinstance(v, list) and (len(v) == 0):
-                return False
-            elif ((k in self.defaults) and 
-                (self.defaults[k] == v)):
-                return False
-            else:
-                return True
-
-        summ_dict = {k:v for k, v in tent_dict if _check_dict(k, v)}
-        if ((self.bound_lower is not None) or (self.bound_upper is not None)):
-            summ_dict['limits'] = [self.bound_lower, self.bound_upper]
-
-        if ((self.outlier_lower is not None) or 
-            (self.outlier_upper is not None)):
-            summ_dict['outliers'] = [self.outlier_lower, self.outlier_upper]
-
-        return (self.type.lower(), summ_dict)
-
-    def _to_series(self):
-        """Formats data to be written to tsv"""
-        tent_dict = self.__dict__.items()
-
-        def _check_dict(k, v):
-            if k in {'log', 'bound_lower', 'bound_upper', 
-                     'outlier_lower', 'outlier_upper'}:
-                return False
-            if v is None:
-                return False
-            elif isinstance(v, list) and (len(v) == 0):
-                return False
-            elif ((k in self.defaults) and 
-                (self.defaults[k] == v)):
-                return False
-            else:
-                return True
-
-        def _format_value(v):
-            if isinstance(v, list):
-                return ' | '.join(v)
-            if isinstance(v, (set, tuple)):
-                return ' | '.join(list(v))
-            else:
-                str_ = str(v)
-                str_1 = str_.replace("<class '", '').replace("'>", "")
-                return str_1
-
-        dict_ = {k: _format_value(v) for k, v in tent_dict 
-                 if _check_dict(k, v)}
-
-        if ((self.bound_lower is not None) or (self.bound_upper is not None)):
-            dict_['order'] = \
-                ('%s | %s' % (self.bound_lower, self.bound_upper))
-
-        if ((self.outlier_lower is not None) or 
-            (self.outlier_upper is not None)):
-            dict_['ambiguous'] = \
-                ('%s | %s') % (self.outlier_lower, self.outlier_upper)
-
-        return pd.Series(dict_)
-
-
-def _check_limits(limits, var_name):
-    """
-    A helper function that checks whether the limit value meets the criteria
-    """
-    if limits is not None:
-            lower, upper = limits
-            if ((lower is not None) and (upper is not None) and
-                    (lower > upper)):
-                raise ValueError('The lower limit cannot be greater than '
-                                 'the upper for %s.')
-    else:
-        lower, upper = (None, None)
-
-    return lower, upper
+        return [lower, upper]
 
 
