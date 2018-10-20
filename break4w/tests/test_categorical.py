@@ -66,6 +66,14 @@ class CategoricalTest(TestCase):
         self.assertEqual(test.ambiguous, set(['manager']))
         self.assertEqual(test.ref_value, 'coach')
 
+    def test_categorical_dict_var_labels(self):
+        test = Categorical(self.name,
+                           self.description,
+                           int,
+                           self.order,
+                           var_labels={1: 'Striker', 2: 'D-man', 3: 'Goalie'},
+                           )
+
 
     def test_update_order(self):
         # Checks the current order

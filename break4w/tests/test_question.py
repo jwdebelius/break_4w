@@ -8,7 +8,7 @@ import numpy.testing as npt
 import pandas.util.testing as pdt
 
 from break4w.question import (Question,
-                              _split_numeric_mapping,
+                              _check_cmap
                               )
 
 
@@ -304,6 +304,10 @@ class QuestionTest(TestCase):
                           'free_response': 'True',
                           'missing': "TBD",
                           'order': 'Bitty=1 | Ransom=2 | Holster=3',
+                          'colormap': 'Reds',
+                          'ref_value': 'Ransom',
+                          'sig_figs': '3',
+                          'i_dont_know': np.pi,
                            })
         q = Question._read_series(var_)
 
@@ -318,11 +322,15 @@ class QuestionTest(TestCase):
         self.assertEqual(q.missing, {'TBD'})
         self.assertEqual(q.order, ['Bitty', 'Ransom', 'Holster'])
         self.assertEqual(q.var_labels, {'Bitty': '1', 'Ransom': '2', 'Holster': '3'})
+        self.assertEqual(q.colormap, 'Reds')
+        self.assertEqual(q.ref_value, 'Ransom')
+        self.assertEqual(q.sig_figs, 3)
+        npt.assert_almost_equal(q.i_dont_know, np.pi, 54)
+
 
         # Checks defaults
         self.assertFalse(q.mimarks)
         self.assertEqual(q.ontology, None)
-        self.assertEqual(q.colormap, None)
         self.assertEqual(q.blanks, None)
         self.assertEqual(q.log, [])
         self.assertEqual(q.source_columns, [])
@@ -339,6 +347,9 @@ class QuestionTest(TestCase):
         self.assertEqual(q.dtype, bool)
         self.assertFalse(q.ref_value)
         self.assertEqual(q.order, [False, True])
+
+    def test_check_cmap(self):
+        self.assertEqual(_check_cmap('Reds'), 'Reds')
 
 
 if __name__ == '__main__':

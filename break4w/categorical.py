@@ -3,7 +3,7 @@ import copy
 import numpy as np
 import pandas as pd
 
-from break4w.question import Question, _split_numeric_mapping
+from break4w.question import Question
 
 
 class Categorical(Question):
@@ -130,7 +130,7 @@ class Categorical(Question):
             self.var_numeric = {g: i for i, g in self.var_labels.items()}
         elif isinstance(var_labels, str):
             self.var_labels = \
-                _split_numeric_mapping(var_labels, code_delim)
+                self._iterable_from_str(var_labels, code_delim, var_type=int)
             self.var_numeric = {g: i for i, g in self.var_labels.items()}
         else:
             self.var_labels = None
@@ -138,13 +138,7 @@ class Categorical(Question):
 
         self.frequency_cutoff = frequency_cutoff
 
-        if ambiguous == None:
-            self.ambiguous = None
-        else:
-            ambig = _split_numeric_mapping(ambiguous)
-            if isinstance(ambig, list):
-                ambig = set(ambig)
-            self.ambiguous = ambig
+        self.ambiguous = self._iterable_from_str(ambiguous)
 
     def _update_order(self, remap_):
         """Updates the order and earlier order arguments
@@ -161,67 +155,6 @@ class Categorical(Question):
             new_o = remap_(o)
             if new_o not in self.order and not pd.isnull(new_o):
                 self.order.append(new_o)
-
-    def analysis_apply_conversion(self, map_, remap_, command_name,
-        loggable=True):
-        """Applies and logs an arbitrary data remapping function
-
-        Parameters
-        ----------
-        map_ : DataFrame
-            A pandas object containing the data to be analyzed. The
-            Question `name` should be a column in the `map_`.
-        remap_: function, dict
-            A function to update the data in the order or a dictionary
-            describing the values to replace
-        command_name: str, optional
-            A description of the remapping function
-        loggable: float, optional
-            Whether the function should be updated
-        """
-        if isinstance(remap_, dict):
-            mapping = remap_.copy()
-            def remap_(x):
-                if x in mapping:
-                    return mapping[x]
-                else:
-                    return x
-
-        message = ' | '.join(['%s >>> %s' % (o, remap_(o))
-                              for o in self.order])
-        map_[self.name] = map_[self.name].apply(remap_)
-        self._update_order(remap_)
-        if loggable:
-            self._update_log('transformation', command_name, message)
-
-    def analysis_convert_to_label(self, map_):
-        """
-        Converts integer group values to string names
-
-        Parameters
-        ----------
-        map_ : DataFrame
-            A pandas object containing the data to be analyzed. The
-            Question `name` should be a column in the `map_`.
-
-        """
-        if self.name_mapping is None:
-            self._update_log('convert to label', 'error',
-                             'There is no way to map codes to labels')
-            raise ValueError('There is no way to map codes to labels')
-
-        if self.numeric_mapping is None:
-            self.numeric_mapping = {g: i for (i, g)
-                                    in self.name_mapping.items()}
-
-        def remap_(x):
-            if x in self.name_mapping:
-                return self.name_mapping[x]
-            else:
-                return np.nan
-
-        self.analysis_apply_conversion(map_, remap_,
-                                       command_name='convert code to label')
 
     def validate(self, map_):
         """Checks the values in the mapping file are correct

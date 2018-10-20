@@ -18,8 +18,7 @@ ebi_null = {'not applicable',
             }
 properties_str = {'name', 'description', 'clean_name', 'notes', 'units',
                       'original_name', 'var_labels', 'var_numbers', 'type'}
-properties_num = {'frequency_cutoff', 'bound_lower', 'bound_upper',
-                  'sig_figs', 'magnitude'}
+properties_num = {'frequency_cutoff', 'sig_figs', 'magnitude'}
 properties_bin = {'free_response', 'mimarks', 'ordinal'}
 properties_set = {'source_columns', 'ontology', 'derivative_columns', 
                   'blanks', 'ambigious'}
@@ -275,7 +274,9 @@ class Question:
                 return None
             else:
                 return var_type(x)
-        if code_delim in val_:
+        if val_ in {null_value, 'None', None}:
+            return None
+        elif code_delim in val_:
             def get_k(v):
                 return var_type(v.split(code_delim)[0])
             def get_v(v):
@@ -283,8 +284,8 @@ class Question:
             return {get_k(x): get_v(x) for x in val_.split(var_delim)}
         elif var_delim in val_:
             return return_type([check_null(x) for x in val_.split(var_delim)])
-        elif val_ in {null_value, 'None', None}:
-            return None
+        # elif val_ in {null_value, 'None', None}:
+        #     return None
         else:
             return return_type([check_null(val_)])
 
@@ -361,7 +362,7 @@ class Question:
             if pd.isnull(v) or v == str(null_value):
                 return None
             if k == 'colormap':
-                return check_cmap(v)
+                return _check_cmap(v)
             elif (k == 'ref_value') and (dtype_ is bool):
                 return pydoc.locate(v.title())
             elif (k == 'ref_value'):
@@ -454,18 +455,10 @@ class Question:
         return remap_
 
 
-def _split_numeric_mapping(str_, code_delim='=', var_delim=' | ', 
-                           split_code=True):
-        """
-        Parses a string with order and variable delimiters
-        """
-        if pd.isnull(str_):
-            return None
-        elif (code_delim in str_) and split_code:
-            return {int(amb_.split(code_delim)[0]): amb_.split(code_delim)[1]
-                    for amb_ in str_.split(var_delim)}
-        elif (var_delim in str_):
-            return [val_ for val_ in str_.split(var_delim)]
-        else:
-            return [str_]
+def _check_cmap(x):
+    """Checks that a read object qualifies as a colormap
+
+    To be developed further!
+    """
+    return x
 
