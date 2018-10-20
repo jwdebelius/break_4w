@@ -235,7 +235,7 @@ class QuestionTest(TestCase):
 
     def test_iterable_to_str_empty(self):
         test = self.q._iterable_to_str([])
-        self.assertTrue(np.isnan(test))
+        self.assertTrue('None')
 
     def test_iterable_from_str_null(self):
         test = self.q._iterable_from_str('---', null_value='---')
@@ -250,6 +250,16 @@ class QuestionTest(TestCase):
         known = 'Dorm | Haus'
         test_ = self.q._iterable_to_str(['Dorm', 'Haus'])
         npt.assert_array_equal(np.array(known), np.array(test_))
+
+    def test_iterable_from_str_partial_list(self):
+        known = ['Dorm', None]
+        test_ = self.q._iterable_from_str('Dorm | None', return_type=list)
+        self.assertEqual(known, test_)
+
+    def test_iterable_to_str_partial_list(self):
+        known = 'Dorm | ---'
+        test_ = self.q._iterable_to_str(['Dorm', None], null_value='---')
+        self.assertEqual(known, test_)
 
     def test_iterable_from_str_code(self):
         known = {0: 'Dorm', 1: 'Haus'}

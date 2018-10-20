@@ -240,22 +240,27 @@ class Question:
 
     @staticmethod
     def _iterable_to_str(val_, code_delim='=', var_delim=' | ', var_str='%s',
-        code_str='%s', null_value=np.nan):
+        code_str='%s', null_value='None'):
         """
         Converts a list or dict into a delimited string for reading
         """
-        if val_ is None:
-            return null_value
-        elif (isinstance(val_, (list, set, tuple, np.ndarray, dict)) and 
+        def _to_str(x):
+            if pd.isnull(x):
+                return null_value
+            else:
+                return var_str % x
+        if (isinstance(val_, (list, set, tuple, np.ndarray, dict)) and 
              len(val_) == 0):
             return null_value
         if isinstance(val_, (list, set, tuple, np.ndarray)):
-            return var_delim.join([var_str % v for v in val_])
+            return var_delim.join([_to_str(v) for v in val_])
         elif isinstance(val_, dict):
             return var_delim.join([
                 ('%s%s%s' % (var_str, code_delim, code_str )) % (k, v)
                  for k, v in val_.items()
                 ])
+        elif val_ is None:
+            return null_value
         else:
             return str(val_).replace("<class '", '').replace("'>", "")
 
@@ -265,21 +270,26 @@ class Question:
         """
         Converts a delimited string into a list or dict
         """ 
-        if val_ is None or (val_ in {null_value, 'None'}):
-            return None
-        elif code_delim in val_:
+        def check_null(x):
+            if (x in {null_value, 'None', None}):
+                return None
+            else:
+                return var_type(x)
+        if code_delim in val_:
             def get_k(v):
                 return var_type(v.split(code_delim)[0])
             def get_v(v):
                 return code_type(v.split(code_delim)[1])
             return {get_k(x): get_v(x) for x in val_.split(var_delim)}
         elif var_delim in val_:
-            return return_type([var_type(x) for x in val_.split(var_delim)])
+            return return_type([check_null(x) for x in val_.split(var_delim)])
+        elif val_ in {null_value, 'None', None}:
+            return None
         else:
-            return return_type([var_type(val_)])
+            return return_type([check_null(val_)])
 
     def _to_series(self, code_delim='=', var_delim=' | ', 
-        var_str=None, code_str='%s', null_value=np.nan):
+        var_str=None, code_str='%s', null_value='None'):
         """Formats data as a series of text values"""
 
         tent_dict = self.__dict__.items()
@@ -307,7 +317,7 @@ class Question:
 
     @classmethod
     def _read_series(cls, var_, var_delim=' | ', code_delim='=', 
-                     null_value=None):
+                     null_value='None'):
         """
         Builds a question object off a series
 
@@ -356,12 +366,12 @@ class Question:
                 return pydoc.locate(v.title())
             elif (k == 'ref_value'):
                 return dtype_(v)
-            elif (k == 'order') and (dtype_ is bool):
+            elif (k in {'order', 'limits'}) and (dtype_ is bool):
                 s_ = cls._iterable_from_str(
                     v, return_type=list, code_delim=code_delim, 
                     var_delim=var_delim, null_value=null_value)
                 return [pydoc.locate(v_.title()) for v_ in s_]
-            elif k == 'order':
+            elif k in {'order', 'limits'}:
                 return cls._iterable_from_str(v, return_type=list, **i_param)
             elif k in properties_num:
                 return float(v)
@@ -376,7 +386,7 @@ class Question:
                  if (not (pd.isnull(v) or v == str(null_value)) or 
                      not k in {'type', 'dtype'})}
 
-        if isinstance(dict_['order'], dict):
+        if ('order' in dict_) and isinstance(dict_['order'], dict):
             part_ = dict_['order']
             dict_['order'] = [dtype_(k) for k in part_.keys()] 
             dict_['var_labels'] = part_
