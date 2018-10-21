@@ -489,6 +489,7 @@ class DictionaryTest(TestCase):
         known_ = self.dictionary
         known_['team_captain'].dtype = str
         var_ = known_.to_dataframe()
+        desc = self.dictionary.description
         test_ = self.dictionary.read_dataframe(var_, description=desc)
 
         self.assertEqual(known_.description, test_.description)
