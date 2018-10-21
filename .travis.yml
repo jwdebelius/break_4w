@@ -15,9 +15,10 @@ before_install:
   # Update conda itself
   - conda update --yes conda
 install:
-  - conda create --yes -n env_name python=$PYTHON_VERSION --file conda_reqs.txt -c conda-forge
+  - conda create --yes -n env_name python=$PYTHON_VERSION --file conda_reqs.txt
   - source activate env_name
   - conda info --envs
+  - pip install coverage
   - pip install . --no-deps
 script:
   - nosetests --with-coverage
