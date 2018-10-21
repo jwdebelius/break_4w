@@ -39,6 +39,7 @@ class DictionaryTest(TestCase):
             },
             {
                 'name': 'team_captain',
+                'dtype': bool,
                 'description': 'Has the player been given a C or AC?',
                 'missing': 'TBD',
             },
@@ -142,6 +143,22 @@ class DictionaryTest(TestCase):
         self.assertEqual(log_['transform_type'], None)
         self.assertEqual(log_['transformation'],
                          'years_on_team was added to the dictionary')
+
+    def test_add_question_series(self):
+        var_ = pd.Series({
+            'name': 'years_on_team',
+            'description': ("How many years the player has been on SMH "
+                            "during Bitty's frog year"),
+            'units': 'years',
+            'dtype': 'int',
+            'order': '1 | None',
+            })
+        self.dictionary.drop_question('years_on_team')
+        self.dictionary.add_question(var_, question_type='continous')
+        test_ = self.dictionary['years_on_team']
+        self.assertTrue(isinstance(test_, Continous))
+        self.assertTrue(test_.limits, [1, None])
+        self.assertFalse('order' in test_.__dict__)
 
     def test_add_question_object_no_record(self):
         # Adds `years_on_team` as a continous quesiton.
@@ -259,118 +276,118 @@ class DictionaryTest(TestCase):
             'blanks : None > not applicable | semester_conversion : add > 2'
             )
 
-    # def test_validate_question_order_pass(self):
-    #     self.dictionary._validate_question_order(self.map_)
-    #     # Checks the log
-    #     self.assertEqual(len(self.dictionary.log), 1)
-    #     log_ = self.dictionary.log[0]
-    #     self.assertEqual(log_['command'], 'validate')
-    #     self.assertEqual(log_['column'], None)
-    #     self.assertEqual(log_['transform_type'], 'pass')
-    #     self.assertEqual(
-    #         log_['transformation'],
-    #         'The columns in the mapping file match the columns in '
-    #         'the data dictionary.'
-    #         )
+    def test_validate_question_order_pass(self):
+        self.dictionary._validate_question_order(self.map_)
+        # Checks the log
+        self.assertEqual(len(self.dictionary.log), 1)
+        log_ = self.dictionary.log[0]
+        self.assertEqual(log_['command'], 'validate')
+        self.assertEqual(log_['column'], None)
+        self.assertEqual(log_['transform_type'], 'pass')
+        self.assertEqual(
+            log_['transformation'],
+            'The columns in the mapping file match the columns in '
+            'the data dictionary.'
+            )
 
-    # def test_validate_question_order_different_cols_error(self):
-    #     self.dictionary.drop_question('nickname')
-    #     with self.assertRaises(ValueError):
-    #         self.dictionary._validate_question_order(self.map_)
-    #     self.assertEqual(len(self.dictionary.log), 2)
-    #     log_ = self.dictionary.log[1]
-    #     self.assertEqual(log_['command'], 'validate')
-    #     self.assertEqual(log_['column'], None)
-    #     # self.assertEqual(log_['transform_type'], 'fail')
-    #     self.assertEqual(
-    #         log_['transformation'],
-    #         'There are 0 columns in the data dictionary '
-    #         'not in the mapping file, and 1 from the mapping'
-    #         ' file not in the data dictionary.'
-    #         )
+    def test_validate_question_order_different_cols_error(self):
+        self.dictionary.drop_question('nickname')
+        with self.assertRaises(ValueError):
+            self.dictionary._validate_question_order(self.map_)
+        self.assertEqual(len(self.dictionary.log), 2)
+        log_ = self.dictionary.log[1]
+        self.assertEqual(log_['command'], 'validate')
+        self.assertEqual(log_['column'], None)
+        # self.assertEqual(log_['transform_type'], 'fail')
+        self.assertEqual(
+            log_['transformation'],
+            'There are 0 columns in the data dictionary '
+            'not in the mapping file, and 1 from the mapping'
+            ' file not in the data dictionary.'
+            )
 
-    # def test_validate_question_order_different_cols_error_verbose(self):
-    #     self.dictionary.drop_question('nickname')
-    #     with self.assertRaises(ValueError):
-    #         self.dictionary._validate_question_order(self.map_, verbose=True)
-    #     log_ = self.dictionary.log[1]
-    #     self.assertEqual(
-    #         log_['transformation'],
-    #         'There are 0 columns in the data dictionary '
-    #         'not in the mapping file, and 1 from the mapping'
-    #         ' file not in the data dictionary.\nIn the dictionary but not in '
-    #         'the map: \n\n\nIn the map but not in the dictionary: \nnickname\n'
-    #         '\n'
-    #         )
+    def test_validate_question_order_different_cols_error_verbose(self):
+        self.dictionary.drop_question('nickname')
+        with self.assertRaises(ValueError):
+            self.dictionary._validate_question_order(self.map_, verbose=True)
+        log_ = self.dictionary.log[1]
+        self.assertEqual(
+            log_['transformation'],
+            'There are 0 columns in the data dictionary '
+            'not in the mapping file, and 1 from the mapping'
+            ' file not in the data dictionary.\nIn the dictionary but not in '
+            'the map: \n\n\nIn the map but not in the dictionary: \nnickname\n'
+            '\n'
+            )
 
-    # def test_validate_question_check_order_error_true(self):
-    #     self.map_ = self.map_[['nickname', 'years_on_team',
-    #                            'team_captain', 'position']]
-    #     with self.assertRaises(ValueError):
-    #         self.dictionary._validate_question_order(self.map_, verbose=True)
-    #     log_ = self.dictionary.log[0]
-    #     self.assertEqual(
-    #         log_['transformation'],
-    #         'The columns in the dictionary and map are not in the same order.'
-    #         )
+    def test_validate_question_check_order_error_true(self):
+        self.map_ = self.map_[['nickname', 'years_on_team',
+                               'team_captain', 'position']]
+        with self.assertRaises(ValueError):
+            self.dictionary._validate_question_order(self.map_, verbose=True)
+        log_ = self.dictionary.log[0]
+        self.assertEqual(
+            log_['transformation'],
+            'The columns in the dictionary and map are not in the same order.'
+            )
 
-    # def test_validate_question_check_order_pass(self):
-    #     self.map_ = self.map_[['nickname', 'years_on_team',
-    #                            'team_captain', 'position']]
-    #     self.dictionary._validate_question_order(self.map_, check_order=False)
-    #     log_ = self.dictionary.log[0]
-    #     self.assertEqual(log_['command'], 'validate')
-    #     self.assertEqual(log_['column'], None)
-    #     self.assertEqual(log_['transform_type'], 'pass')
-    #     self.assertEqual(
-    #         log_['transformation'],
-    #         'The columns in the mapping file match the columns in '
-    #         'the data dictionary.'
-    #         )
+    def test_validate_question_check_order_pass(self):
+        self.map_ = self.map_[['nickname', 'years_on_team',
+                               'team_captain', 'position']]
+        self.dictionary._validate_question_order(self.map_, check_order=False)
+        log_ = self.dictionary.log[0]
+        self.assertEqual(log_['command'], 'validate')
+        self.assertEqual(log_['column'], None)
+        self.assertEqual(log_['transform_type'], 'pass')
+        self.assertEqual(
+            log_['transformation'],
+            'The columns in the mapping file match the columns in '
+            'the data dictionary.'
+            )
 
-    # def test_validate_question_error_not_record(self):
-    #     self.map_ = self.map_[['nickname', 'years_on_team',
-    #                            'team_captain', 'position']]
-    #     with self.assertRaises(ValueError):
-    #         self.dictionary._validate_question_order(self.map_, record=False)
-    #     self.assertEqual(len(self.dictionary.log), 0)
+    def test_validate_question_error_not_record(self):
+        self.map_ = self.map_[['nickname', 'years_on_team',
+                               'team_captain', 'position']]
+        with self.assertRaises(ValueError):
+            self.dictionary._validate_question_order(self.map_, record=False)
+        self.assertEqual(len(self.dictionary.log), 0)
 
-    # def test_validate_pass(self):
-    #     kcolumns = pd.Series([None, 'years_on_team', 'team_captain',
-    #                           'team_captain', 'position', 'position', None],
-    #                          name='column')
-    #     self.dictionary.validate(self.map_)
-    #     # Checks the log
-    #     self.assertEqual(len(self.dictionary.log), 7)
-    #     log_ = pd.DataFrame(self.dictionary.log)
-    #     self.assertTrue(np.all(log_['command'] == 'validate'))
-    #     self.assertTrue(np.all(log_['transform_type'] == 'pass'))
-    #     pdt.assert_series_equal(kcolumns, log_['column'])
-    #     self.assertEqual(log_.loc[6, 'transformation'], 'All columns passed')
+    def test_validate_pass(self):
+        kcolumns = pd.Series([None, 'years_on_team', 'team_captain',
+                              'team_captain', 'position', 'position', None],
+                             name='column')
+        self.dictionary.validate(self.map_)
+        # Checks the log
+        self.assertEqual(len(self.dictionary.log), 7)
+        log_ = pd.DataFrame(self.dictionary.log)
+        self.assertTrue(np.all(log_['command'] == 'validate'))
+        self.assertTrue(np.all(log_['transform_type'] == 'pass'))
+        pdt.assert_series_equal(kcolumns, log_['column'])
+        self.assertEqual(log_.loc[6, 'transformation'], 'All columns passed')
 
-    # def test_validate_error(self):
-    #     # Sets up known series
-    #     kcolumns = pd.Series([None, 'years_on_team', 'team_captain',
-    #                           'team_captain', 'position', 'position', None],
-    #                          name='column')
-    #     kvalidate = pd.Series(['pass', 'error', 'pass', 'pass', 'pass',
-    #                            'pass', 'error'],
-    #                           name='transform_type')
+    def test_validate_error(self):
+        # Sets up known series
+        kcolumns = pd.Series([None, 'years_on_team', 'team_captain',
+                              'team_captain', 'position', 'position', None],
+                             name='column')
+        kvalidate = pd.Series(['pass', 'error', 'pass', 'pass', 'pass',
+                               'pass', 'error'],
+                              name='transform_type')
 
-    #     self.map_.loc['Johnson', 'years_on_team'] = \
-    #         ('How do you measure a year? Is it really a year when it takes'
-    #          ' 24 months to get an update?')
-    #     # self.dictionary.validate(self.map_)
-    #     with self.assertRaises(ValueError):
-    #         self.dictionary.validate(self.map_)
-    #     # Checks the log
-    #     self.assertEqual(len(self.dictionary.log), 7)
-    #     log_ = pd.DataFrame(self.dictionary.log)
-    #     self.assertTrue(np.all(log_['command'] == 'validate'))
-    #     pdt.assert_series_equal(kvalidate, log_['transform_type'])
-    #     pdt.assert_series_equal(kcolumns, log_['column'])
-    #     self.assertEqual(log_.loc[6, 'transformation'], 
-    #         'There were issues with the following columns:\nyears_on_team')
+        self.map_.loc['Johnson', 'years_on_team'] = \
+            ('How do you measure a year? Is it really a year when it takes'
+             ' 24 months to get an update?')
+        # self.dictionary.validate(self.map_)
+        with self.assertRaises(ValueError):
+            self.dictionary.validate(self.map_)
+        # Checks the log
+        self.assertEqual(len(self.dictionary.log), 7)
+        log_ = pd.DataFrame(self.dictionary.log)
+        self.assertTrue(np.all(log_['command'] == 'validate'))
+        pdt.assert_series_equal(kvalidate, log_['transform_type'])
+        pdt.assert_series_equal(kcolumns, log_['column'])
+        self.assertEqual(log_.loc[6, 'transformation'], 
+            'There were issues with the following columns:\nyears_on_team')
 
     def test_to_pandas_stata(self):
         known_vars = {x['name']: x['description'] for x in self.columns}
@@ -379,39 +396,9 @@ class DictionaryTest(TestCase):
         self.assertEqual(known_vars, test_vars)
 
     def test_to_dataframe(self):
-        self.dictionary['nickname'].var_numeric = {1: 'Bitty', 
-                                                   2: 'Ransom', 
-                                                   3: 'Holster'}
-
-
-        columns = ['years_on_team', 'team_captain', 'position', 'nickname']
-        known = pd.DataFrame(
-            data=[columns,
-                  [c['description'] for c in self.columns],
-                  ['int', 'bool', 'str', 'str'],
-                  ['Continous', 'Bool', 'Categorical', 'Question'],
-                  ['Years On Team', 'Team Captain', 'Position', 'Nickname'],
-                  ['years', np.nan, np.nan, np.nan],
-                  [np.nan, 'TBD', np.nan, np.nan],
-                  ['1 | None', 'false | true', 'Striker | D-man | Goalie', 
-                   np.nan],
-                  [np.nan, np.nan, np.nan, '1=Bitty | 2=Ransom | 3=Holster'],
-                  [np.nan, 'false', 'Striker', np.nan],
-                  ],
-            index=['name', 'description', 'dtype', 'type', 'clean_name', 
-                   'units', 'missing', 'order', 'var_numeric', 'ref_value']
-            ).T
-        known.set_index('name', inplace=True)
-        known = known[['description', 'dtype', 'type', 'clean_name', 'order', 
-                       'units', 'missing', 'ref_value', 'var_numeric']]
-        test = self.dictionary.to_dataframe()
-
-        pdt.assert_frame_equal(known, self.dictionary.to_dataframe())
-
-    def test_to_dateframe_write_numeric(self):
-        self.dictionary['nickname'].var_numeric = {1: 'Bitty', 
-                                                   2: 'Ransom', 
-                                                   3: 'Holster'}
+        self.dictionary['nickname'].var_labels = {1: 'Bitty', 
+                                                  2: 'Ransom', 
+                                                  3: 'Holster'}
 
 
         columns = ['years_on_team', 'team_captain', 'position', 'nickname']
@@ -431,15 +418,16 @@ class DictionaryTest(TestCase):
                    'units', 'missing', 'order', 'ref_value']
             ).T
         known.set_index('name', inplace=True)
-        known = known[['description', 'dtype', 'type', 'clean_name',  
-                       'order', 'units', 'missing', 'ref_value']]
-        test = self.dictionary.to_dataframe(write_numeric_codes=True)
-        pdt.assert_frame_equal(known, test)
+        known = known[['description', 'dtype', 'type', 'clean_name', 'order', 
+                       'units', 'missing', 'ref_value']]
+        test = self.dictionary.to_dataframe()
+
+        pdt.assert_frame_equal(known, self.dictionary.to_dataframe())
 
     def test_to_dataframe_clean(self):
-        self.dictionary['nickname'].var_numeric = {1: 'Bitty', 
-                                                   2: 'Ransom', 
-                                                   3: 'Holster'}
+        self.dictionary['nickname'].var_labels = {1: 'Bitty', 
+                                                  2: 'Ransom', 
+                                                  3: 'Holster'}
 
 
         columns = ['years_on_team', 'team_captain', 'position', 'nickname']
@@ -467,7 +455,7 @@ class DictionaryTest(TestCase):
         df_ = pd.DataFrame(
             data=[columns,
                   [c['description'] for c in self.columns],
-                  ['int', 'bool', 'str', 'str'],
+                  ['int', 'str', 'str', 'str'],
                   ['Continous', 'Bool', 'Categorical', 'Question'],
                   ['Years On Team', 'Team Captain', 'Position', 'Nickname'],
                   ['years', np.nan, np.nan, np.nan],
@@ -478,15 +466,36 @@ class DictionaryTest(TestCase):
                   [np.nan, 'false', 'Striker', np.nan],
                   ],
             index=['name', 'description', 'dtype', 'type', 'clean_name', 
-                   'units', 'missing', 'order', 'var_numeric', 'ref_value']
+                   'units', 'missing', 'order', 'var_labels', 'ref_value']
             ).T
         df_.set_index('name', inplace=True)
-        test_ = DataDictionary.read_dataframe(df_.loc[['years_on_team']], 
-                                              description='test?')
+        test_ = DataDictionary.read_dataframe(df_, description='test?')
 
         # Checks the initiation
-        # self.assertEqual(test_.description, 'test?')
+        self.assertEqual(test_.description, 'test?')
+        # print(test_)
+        self.assertEqual(list(test_.keys()),
+                         ['years_on_team', 'team_captain', 'position',
+                          'nickname'])
+        # Checks the question types. We're assuming here the question objects
+        # have already been tested and it does its job... these are 
+        # obstensibly unit tests and not integration tests.
+        self.assertTrue(isinstance(test_['years_on_team'], Continous))
+        self.assertTrue(isinstance(test_['position'], Categorical))
+        self.assertTrue(isinstance(test_['team_captain'], Bool))
+        self.assertTrue(isinstance(test_['nickname'], Question))
 
+    def test_roundtrip(self):
+        known_ = self.dictionary
+        known_['team_captain'].dtype = str
+        var_ = known_.to_dataframe()
+        test_ = self.dictionary.read_dataframe(var_, description=desc)
+
+        self.assertEqual(known_.description, test_.description)
+        self.assertEqual(known_.keys(), test_.keys())
+        self.assertEqual(known_.__dict__, test_.__dict__)
+        for name_, col_ in known_.items():
+            self.assertEqual(col_.__dict__, test_[name_].__dict__)
 
 
 if __name__ == '__main__':

@@ -226,6 +226,11 @@ class ContinousTest(TestCase):
         self.assertEqual('Continous', c.type)
         self.assertEqual(c.limits, [1, None])
 
+    def test_round_trip(self):
+        var_ = self.c._to_series()
+        new_ = Continous._read_series(var_)
+        self.assertEqual(self.c.__dict__, new_.__dict__)
+
 
 if __name__ == '__main__':
     main()

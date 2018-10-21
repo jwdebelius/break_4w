@@ -166,5 +166,10 @@ class CategoricalTest(TestCase):
         self.assertEqual(c.description, self.description)
         self.assertEqual(c.dtype, str)
 
+    def test_round_trip(self):
+        var_ = self.c._to_series()
+        new_ = Categorical._read_series(var_)
+        self.assertEqual(self.c.__dict__, new_.__dict__)
+
 if __name__ == '__main__':
     main()

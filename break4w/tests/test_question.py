@@ -321,7 +321,8 @@ class QuestionTest(TestCase):
         self.assertEqual('Player Name', q.clean_name)
         self.assertEqual(q.missing, {'TBD'})
         self.assertEqual(q.order, ['Bitty', 'Ransom', 'Holster'])
-        self.assertEqual(q.var_labels, {'Bitty': '1', 'Ransom': '2', 'Holster': '3'})
+        self.assertEqual(q.var_labels, 
+                         {'Bitty': '1', 'Ransom': '2', 'Holster': '3'})
         self.assertEqual(q.colormap, 'Reds')
         self.assertEqual(q.ref_value, 'Ransom')
         self.assertEqual(q.sig_figs, 3)
@@ -347,6 +348,11 @@ class QuestionTest(TestCase):
         self.assertEqual(q.dtype, bool)
         self.assertFalse(q.ref_value)
         self.assertEqual(q.order, [False, True])
+
+    def test_series_round_trip(self):
+        var_ = self.q._to_series()
+        new_ = Question._read_series(var_)
+        self.assertEqual(self.q.__dict__, new_.__dict__)
 
     def test_check_cmap(self):
         self.assertEqual(_check_cmap('Reds'), 'Reds')

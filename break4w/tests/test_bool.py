@@ -27,6 +27,7 @@ class BoolTest(TestCase):
             name=self.name,
             description=self.description,
             bool_format=self.bool,
+            dtype=str,
             ambiguous='TBD',
             )
 
@@ -48,7 +49,7 @@ class BoolTest(TestCase):
     def test_to_series(self):
         known = pd.Series({'name': self.name,
                            'description': self.description,
-                           'dtype': 'bool',
+                           'dtype': 'str',
                            'type': 'Bool',
                            'clean_name': 'Team Captain',
                            'order': 'False | True',
@@ -77,6 +78,11 @@ class BoolTest(TestCase):
         self.assertEqual(b.dtype, bool)
         self.assertEqual(b.order, [False, True])
         self.assertFalse(b.ref_value)
+
+    def test_roundtrip(self):
+        var_ = self.b._to_series()
+        new_ = Bool._read_series(var_)
+        self.assertEqual(self.b.__dict__, new_.__dict__)
 
 
 

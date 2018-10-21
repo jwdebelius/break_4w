@@ -4,8 +4,8 @@ from break4w.categorical import Categorical
 
 
 class Bool(Categorical):
-    def __init__(self, name, description, clean_name=None, bool_format=None,
-                 ref_value=None, **kwargs):
+    def __init__(self, name, description, dtype=bool, clean_name=None, 
+                  bool_format=None, ref_value=None, **kwargs):
         """A question object for boolean question
 
         Parameters
@@ -57,7 +57,7 @@ class Bool(Categorical):
             ref_value = f_format
 
         if 'dtype' not in kwargs:
-            kwargs['dtype'] = bool
+            kwargs['dtype'] = dtype
         if 'order' not in kwargs:
             kwargs['order'] = [f_format, t_format]
         if name not in kwargs:

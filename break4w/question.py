@@ -317,8 +317,7 @@ class Question:
                          if _check_dict(k, v)})
 
     @classmethod
-    def _read_series(cls, var_, var_delim=' | ', code_delim='=', 
-                     null_value='None'):
+    def _read_series(cls, var_, var_delim=' | ', code_delim='=', null_value='None'):
         """
         Builds a question object off a series
 
@@ -326,14 +325,6 @@ class Question:
         ----------
         var_: Series
             The series containing the parameters
-        read_numeric_codes: bool, optional
-            Whether columns should be read with a numerical delimiter (i.e
-            "=") to parse a numeric value into a categorical one. For example,
-            if numeric is true, then "0=female | 1=male" would be parsed that
-            any data encoded as 0 maps to female, any data encoded as 1 maps
-            to male, and the order of hte values is `[0, 1]` (corresponding to
-            `['female', 'male']`). Otherwise, the line would be read
-            literally, and the order is read as `["0=female", "1=male"]`.
         var_delim: str, optional
             The seperator between values in the "order" column.
         code_delim: str, optional

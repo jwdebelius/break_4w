@@ -7,7 +7,7 @@ from break4w.question import (Question)
 class Continous(Question):
 
     def __init__(self, name, description, units, dtype=float, limits=None, 
-        sig_figs=None, magnitude=1, **kwargs):
+        sig_figs=None, magnitude=1, order=None, **kwargs):
         """A Question object with continous responses
 
         Parameters
@@ -60,7 +60,8 @@ class Continous(Question):
                           dtype=dtype,
                           **kwargs
                           )
-
+        if isinstance(order, list) and limits is None:
+            limits = order
         self.limits = self._check_limits(limits, var_name='limits')
 
         self.units = units
