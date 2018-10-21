@@ -8,7 +8,7 @@ import numpy.testing as npt
 import pandas.util.testing as pdt
 
 from break4w.question import (Question,
-                              # _identify_remap_function,
+                              _check_cmap
                               )
 
 
@@ -146,13 +146,6 @@ class QuestionTest(TestCase):
         self.assertEqual(log_['transformation'],
                          'metaphysical goalie johnson > Bitty')
 
-    def test_analysis_mask_missing(self):
-        self.q.missing = {'Bitty'}
-        self.q.analysis_mask_missing(self.map_)
-        pdt.assert_series_equal(pd.Series([np.nan, 'Ransom', 'Holster'],
-                                          name='player_name'),
-                                self.map_['player_name'])
-
     def test_write_provenance(self):
         known_log = pd.DataFrame(
             np.array([[datetime.datetime.now(), 'Write Log', 'team_captain',
@@ -236,36 +229,57 @@ class QuestionTest(TestCase):
         tseries = iseries.apply(f_)
         pdt.assert_series_equal(kseries, tseries)
 
-    def test_split_numeric_mapping_both(self):
-        known = {0: 'Dorm', 1: 'Haus'}
-        test_ = self.q._split_numeric_mapping('0=Dorm | 1=Haus')
-        self.assertEqual(known, test_)
+    def test_iterable_to_str_null(self):
+        test = self.q._iterable_to_str(None, null_value='---')
+        self.assertEqual(test, '---')
 
-    def test_split_numeric_mapping_var(self):
+    def test_iterable_to_str_empty(self):
+        test = self.q._iterable_to_str([])
+        self.assertTrue('None')
+
+    def test_iterable_from_str_null(self):
+        test = self.q._iterable_from_str('---', null_value='---')
+        self.assertEqual(test, None)
+
+    def test_iterable_from_str_list(self):
         known = ['Dorm', 'Haus']
-        test_ = self.q._split_numeric_mapping('Dorm | Haus')
+        test_ = self.q._iterable_from_str('Dorm | Haus', return_type=list)
         self.assertEqual(known, test_)
 
-    def test_split_numeric_mapping_var(self):
-        known = ['Boston']
-        test_ = self.q._split_numeric_mapping('Boston')
+    def test_iterable_to_str_list(self):
+        known = 'Dorm | Haus'
+        test_ = self.q._iterable_to_str(['Dorm', 'Haus'])
+        npt.assert_array_equal(np.array(known), np.array(test_))
+
+    def test_iterable_from_str_partial_list(self):
+        known = ['Dorm', None]
+        test_ = self.q._iterable_from_str('Dorm | None', return_type=list)
         self.assertEqual(known, test_)
 
-    def test_to_dict(self):
-        known = {'name': self.name,
-                 'description': self.description,
-                 'dtype': self.dtype,
-                 'free_response': True,
-                 'clean_name': 'Player Name',
-                 }
-        type_, test = self.q.to_dict()
-        self.assertEqual(test, known)
-        self.assertEqual(type_, 'question')
+    def test_iterable_to_str_partial_list(self):
+        known = 'Dorm | ---'
+        test_ = self.q._iterable_to_str(['Dorm', None], null_value='---')
+        self.assertEqual(known, test_)
+
+    def test_iterable_from_str_code(self):
+        known = {0: 'Dorm', 1: 'Haus'}
+        test_ = self.q._iterable_from_str('0=Dorm | 1=Haus', var_type=int)
+        self.assertEqual(known, test_)
+
+    def test_iterable_to_str_code(self):
+        known = '0=Dorm | 1=Haus'
+        test_ = self.q._iterable_to_str({0: 'Dorm', 1: 'Haus'})
+        self.assertEqual(known, test_)
+
+    def test_iterable_from_str_var(self):
+        known = set(['Boston'])
+        test_ = self.q._iterable_from_str('Boston')
+        self.assertEqual(known, test_)
 
     def test_to_series(self):
         self.q.order = ['Bitty', 'Ransom', 'Holster']
         self.q.missing = {'TBD'}
-        self.numeric_mapping = {1: 'Bitty', 2: 'Ransom', 3: 'Holster'}
+        self.q.var_labels = {1: 'Bitty', 2: 'Ransom', 3: 'Holster'}
 
         known = pd.Series({'name': self.name,
                            'description': self.description,
@@ -275,12 +289,73 @@ class QuestionTest(TestCase):
                            'free_response': 'True',
                            'missing': "TBD",
                            'order': 'Bitty | Ransom | Holster',
-                           'numeric_mapping': '1=Bitty | 2=Ransom | 3=Holster'
+                           'var_labels': '1=Bitty | 2=Ransom | 3=Holster'
                            })
-        known = known[['name', 'description', 'dtype', 'type', 'clean_name', 
-                       'free_response', 'missing', 'order']]
+        # known = known[['name', 'description', 'dtype', 'type', 'clean_name', 
+        #                'free_response', 'missing', 'order']]
         test_ = self.q._to_series()
         pdt.assert_series_equal(known, test_)
+
+    def test_read_series(self):
+        var_ = pd.Series({'name': self.name,
+                          'description': self.description,
+                          'dtype': 'str',
+                          'clean_name': 'Player Name',
+                          'free_response': 'True',
+                          'missing': "TBD",
+                          'order': 'Bitty=1 | Ransom=2 | Holster=3',
+                          'colormap': 'Reds',
+                          'ref_value': 'Ransom',
+                          'sig_figs': '3',
+                          'i_dont_know': np.pi,
+                           })
+        q = Question._read_series(var_)
+
+        # Checks set values
+        self.assertTrue(isinstance(q, Question))
+        self.assertEqual(self.name, q.name)
+        self.assertEqual(self.description, q.description)
+        self.assertEqual(self.dtype, q.dtype)
+        self.assertEqual('Question', q.type)
+        self.assertTrue(q.free_response)
+        self.assertEqual('Player Name', q.clean_name)
+        self.assertEqual(q.missing, {'TBD'})
+        self.assertEqual(q.order, ['Bitty', 'Ransom', 'Holster'])
+        self.assertEqual(q.var_labels, 
+                         {'Bitty': '1', 'Ransom': '2', 'Holster': '3'})
+        self.assertEqual(q.colormap, 'Reds')
+        self.assertEqual(q.ref_value, 'Ransom')
+        self.assertEqual(q.sig_figs, 3)
+        npt.assert_almost_equal(q.i_dont_know, np.pi, 54)
+
+
+        # Checks defaults
+        self.assertFalse(q.mimarks)
+        self.assertEqual(q.ontology, None)
+        self.assertEqual(q.blanks, None)
+        self.assertEqual(q.log, [])
+        self.assertEqual(q.source_columns, [])
+        self.assertEqual(q.derivative_columns, [])
+        self.assertEqual(q.notes, None)
+
+    def test_read_series_bool(self):
+        var_ = pd.Series({'name': self.name,
+                          'description': self.description,
+                          'dtype': 'bool',
+                          'order': 'False | True',
+                          'ref_value': 'False'})
+        q = Question._read_series(var_)
+        self.assertEqual(q.dtype, bool)
+        self.assertFalse(q.ref_value)
+        self.assertEqual(q.order, [False, True])
+
+    def test_series_round_trip(self):
+        var_ = self.q._to_series()
+        new_ = Question._read_series(var_)
+        self.assertEqual(self.q.__dict__, new_.__dict__)
+
+    def test_check_cmap(self):
+        self.assertEqual(_check_cmap('Reds'), 'Reds')
 
 
 if __name__ == '__main__':

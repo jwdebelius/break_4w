@@ -6,10 +6,8 @@ from break4w.question import Question
 
 class Continous(Question):
 
-    def __init__(self, name, description, units, dtype=float, limits=None,
-        outliers=None, sig_figs=None, magnitude=1, clean_name=None,
-        mimarks=False, ontology=None, missing=None, blanks=None,
-        colormap=None):
+    def __init__(self, name, description, units, dtype=float, limits=None, 
+        sig_figs=None, magnitude=1, order=None, **kwargs):
         """A Question object with continous responses
 
         Parameters
@@ -45,27 +43,6 @@ class Continous(Question):
             The number of signfiicant figures appropriate for the measurement.
             This should be expressed as a decimal (i.e. `sig_figs = 0.1`),
             specifying the units of error on the value.
-        clean_name : str, optional
-            A nicer version of the way the column should be named. This can be
-            used for display in figures. If nothing is provided, the column
-            name will be coverted to a title by replacing an underscores with
-            spaces and converting to title case.
-        mimarks : bool, optional
-            If the question was a mimarks standard field
-        ontology : str, optional
-            The type of ontology, if any, used to answer the question. An
-            ontology provides a consistent, structured vocabulary. A list
-            of ontologies can be found at https://www.ebi.ac.uk/ols/ontologies
-        missing : str, list, optional
-            Acceptable missing values. Missing values will be used to validate
-            all values in the column. Specified missing values can also be
-            ignored during analysis if correctly specified.
-        blanks: str, list, optional
-            Value to represent experimental blanks, if relevent.
-        colormap: str, iterable, optional
-            The colors to use when plotting the data. This can be a matplotlib
-            colormap object or a string describing a matplotlib compatable
-            colormap (i.e. `'RdBu'`).
 
         Raises
         ------
@@ -81,180 +58,17 @@ class Continous(Question):
                           name=name,
                           description=description,
                           dtype=dtype,
-                          clean_name=clean_name,
-                          mimarks=mimarks,
-                          ontology=ontology,
-                          missing=missing,
-                          blanks=blanks,
-                          colormap=colormap,
+                          **kwargs
                           )
-
-        o_lower, o_upper = _check_limits(outliers, 'outliers')
-        a_lower, a_upper = _check_limits(limits, 'limits')
+        if isinstance(order, list) and limits is None:
+            limits = order
+        self.limits = self._check_limits(limits, var_name='limits')
 
         self.units = units
-        self.bound_lower = a_lower
-        self.bound_upper = a_upper
-        self.outlier_lower = o_lower
-        self.outlier_upper = o_upper
+        self.magnitude = magnitude
+
         self.type = 'Continous'
         self.sig_figs = sig_figs
-
-    def dictionary_update_outliers(self, outliers):
-        """
-        Updates the bounds for outliers in the metadata column.
-
-        Parameters
-        ----------
-        outliers : two element iterable of numbers, optional
-            The range of values pertinant to analysis. This is seperate form
-            the range of physical values *possible* for the data (provided in)
-            limits.
-            Outlires can be expressed in both directions, or in a single
-            direction, with `None` replacing the missing value. So, for
-            concentration, the limit could be represented as `[0, None]`.
-
-        Raises
-        ------
-        ValueError
-            When the values in `outliers` are not expressed in order (i.e.
-            the first value is larger than the second)
-
-        """
-        ori_lower = self.outlier_lower
-        ori_upper = self.outlier_upper
-        lower, upper = _check_limits(outliers, 'outliers')
-        self.outlier_lower = lower
-        self.outlier_upper = upper
-        self._update_log('update outlier values', 'update dictionary',
-                         'Outlier values have been updated: %s > %s '
-                         'and %s > %s.' % (ori_lower, lower, ori_upper, upper)
-                         )
-
-    def analysis_drop_outliers(self, map_):
-        """
-        Removes datapoints outside of the specified limits
-
-        Parameters
-        ----------
-        map_ : DataFrame
-            A pandas object containing the data to be analyzed. The
-            Question `name` should be a column in the `map_`.
-
-        """
-        if ((self.outlier_lower is not None) and
-                (self.outlier_upper is not None)):
-            def remap_(x):
-                if x < self.outlier_lower:
-                    return np.nan
-                elif x > self.outlier_upper:
-                    return np.nan
-                else:
-                    return x
-            summary = ('values outside [%s, %s]'
-                       % (self.outlier_lower, self.outlier_upper))
-        elif (self.outlier_lower is not None):
-            def remap_(x):
-                if x < self.outlier_lower:
-                    return np.nan
-                else:
-                    return x
-            summary = ('values less than %s' % self.outlier_lower)
-        elif (self.outlier_upper is not None):
-            def remap_(x):
-                if x > self.outlier_upper:
-                    return np.nan
-                else:
-                    return x
-            summary = ('values greater than %s' % self.outlier_upper)
-        else:
-            def remap_(x):
-                return x
-            summary = 'No values dropped'
-
-        map_[self.name] = map_[self.name].apply(remap_)
-        self._update_log('drop outliers', 'drop', summary)
-
-    def analysis_set_sig_figs(self, map_):
-        """
-        Rounds the continous values to the correct significant figures.
-
-        Significant figures are awesome (along with unitss). This function
-        is designed to help you maintain the correct significant digits
-        for the value measured.
-
-        Parameters
-        ----------
-        map_ : DataFrame
-            A pandas object containing the data to be analyzed. The
-            Question `name` should be a column in the `map_`.
-
-        Raises
-        ------
-        ValueError
-            If the sig_figs parameter has not been specified.
-
-        """
-        if self.sig_figs is None:
-            self._update_log('round significant figures', 'correct',
-                             'Rounding must be defined!')
-            raise ValueError('Rounding must be defined!')
-
-        # if self.dtype is float:
-        def remap_(x):
-            return np.round(x, -int(np.floor(np.log10(self.sig_figs))))
-
-        map_[self.name] = map_[self.name].apply(remap_)
-        for l in [self.bound_lower, self.bound_upper,
-                  self.outlier_lower, self.outlier_upper]:
-            if l is not None:
-                l = remap_(l)
-
-        self._update_log('round significant figures', 'correct',
-                         'Rounded the data to the nearest %s.'
-                         % self.sig_figs)
-
-    def analysis_remap_dtype(self, map_):
-        """Converts values in the question column to the correct datatype
-
-        Parameters
-        ----------
-        map_ : DataFrame
-            A pandas DataFrame containing the metadata being analyzed. The
-            question object describes a column within the `map_`.
-
-        Raises
-        ------
-        TypeError
-            The question is assumed to be a Boolean, but the value cannot
-            be cast to a boolean value.
-
-        """
-        if self.blanks is None:
-            blanks = set([])
-
-        placeholders = self.missing.union(blanks)
-
-        remap_ = self._identify_remap_function(dtype=self.dtype,
-                                               placeholders=placeholders,
-                                               )
-        iseries = map_[self.name].copy()
-        oseries = iseries.apply(remap_)
-
-        if np.any(oseries.apply(lambda x: x == 'error')):
-            message = (
-                'could not convert to %s'
-                % (str(self.dtype).replace("<class '", '').replace("'>", ''))
-                )
-            self._update_log('transformation', 'cast data type', message)
-            raise TypeError(message)
-
-        map_[self.name] = oseries
-        message = (
-            'convert to %s'
-            % (str(self.dtype).replace("<class '", '').replace("'>", ''))
-            )
-        self._update_log('transformation', 'cast data type', message)
 
     def validate(self, map_):
         """
@@ -311,33 +125,33 @@ class Continous(Question):
                 % (str(self.dtype).replace("<class '", '').replace("'>", '')))
 
         iseries = iseries.replace(list(placeholders), np.nan).dropna()
+        [lower_, upper_] = self.limits
 
         # Defines the text based on the bounding values
-        if (self.bound_upper is not None) and (self.bound_lower is not None):
+        if (lower_ is not None) and (upper_ is not None):
             update_text = ('The values were between %s and %s %s.'
-                           % (self.bound_lower, self.bound_upper, self.units))
-        elif self.bound_upper is not None:
+                           % (lower_, upper_, self.units))
+        elif upper_ is not None:
             update_text = ('The values were less than or equal to %s %s.'
-                           % (self.bound_upper, self.units))
-        elif self.bound_lower is not None:
+                           % (upper_, self.units))
+        elif lower_ is not None:
             update_text = ('The values were greater than or equal to %s %s.'
-                           % (self.bound_lower, self.units))
+                           % (lower_, self.units))
         else:
             update_text = 'there were no limits specified'
 
         lower_text = ''
         lower_issue = False
-        if (self.bound_lower is not None):
-            if np.any(iseries < self.bound_lower):
-                lower_text = ('less than %s' % self.bound_lower)
+        if (lower_ is not None):
+            if np.any(iseries < lower_):
+                lower_text = ('less than %s' % lower_)
                 lower_issue = True
 
         upper_text = ''
         upper_issue = False
-        if (self.bound_upper is not None):
-            if np.any(iseries > self.bound_upper):
-                upper_text = ('greater than %s'
-                              % (self.bound_upper))
+        if (upper_ is not None):
+            if np.any(iseries > upper_):
+                upper_text = ('greater than %s' % (upper_))
                 upper_issue = True
 
         error = False
@@ -362,91 +176,20 @@ class Continous(Question):
             self._update_log('validate', 'pass',
                              update_text)
 
-    def to_dict(self):
-        """Converts the question column to a dictionary
+    @staticmethod
+    def _check_limits(limits, var_name):
         """
-        tent_dict = self.__dict__.items()
+        A helper function that checks whether the limit value meets the criteria
+        """
+        if limits is not None:
+                lower, upper = limits
+                if ((lower is not None) and (upper is not None) and
+                        (lower > upper)):
+                    raise ValueError('The lower limit cannot be greater than '
+                                     'the upper for %s.')
+        else:
+            lower, upper = (None, None)
 
-        def _check_dict(k, v):
-            if k in {'log', 'type', 'bound_lower', 'bound_upper', 
-                     'outlier_lower', 'outlier_upper'}:
-                return False
-            if v is None:
-                return False
-            elif isinstance(v, list) and (len(v) == 0):
-                return False
-            elif ((k in self.defaults) and 
-                (self.defaults[k] == v)):
-                return False
-            else:
-                return True
-
-        summ_dict = {k:v for k, v in tent_dict if _check_dict(k, v)}
-        if ((self.bound_lower is not None) or (self.bound_upper is not None)):
-            summ_dict['limits'] = [self.bound_lower, self.bound_upper]
-
-        if ((self.outlier_lower is not None) or 
-            (self.outlier_upper is not None)):
-            summ_dict['outliers'] = [self.outlier_lower, self.outlier_upper]
-
-        return (self.type.lower(), summ_dict)
-
-    def _to_series(self):
-        """Formats data to be written to tsv"""
-        tent_dict = self.__dict__.items()
-
-        def _check_dict(k, v):
-            if k in {'log', 'bound_lower', 'bound_upper', 
-                     'outlier_lower', 'outlier_upper'}:
-                return False
-            if v is None:
-                return False
-            elif isinstance(v, list) and (len(v) == 0):
-                return False
-            elif ((k in self.defaults) and 
-                (self.defaults[k] == v)):
-                return False
-            else:
-                return True
-
-        def _format_value(v):
-            if isinstance(v, list):
-                return ' | '.join(v)
-            if isinstance(v, (set, tuple)):
-                return ' | '.join(list(v))
-            else:
-                str_ = str(v)
-                str_1 = str_.replace("<class '", '').replace("'>", "")
-                return str_1
-
-        dict_ = {k: _format_value(v) for k, v in tent_dict 
-                 if _check_dict(k, v)}
-
-        if ((self.bound_lower is not None) or (self.bound_upper is not None)):
-            dict_['order'] = \
-                ('%s | %s' % (self.bound_lower, self.bound_upper))
-
-        if ((self.outlier_lower is not None) or 
-            (self.outlier_upper is not None)):
-            dict_['ambiguous'] = \
-                ('%s | %s') % (self.outlier_lower, self.outlier_upper)
-
-        return pd.Series(dict_)
-
-
-def _check_limits(limits, var_name):
-    """
-    A helper function that checks whether the limit value meets the criteria
-    """
-    if limits is not None:
-            lower, upper = limits
-            if ((lower is not None) and (upper is not None) and
-                    (lower > upper)):
-                raise ValueError('The lower limit cannot be greater than '
-                                 'the upper for %s.')
-    else:
-        lower, upper = (None, None)
-
-    return lower, upper
+        return [lower, upper]
 
 

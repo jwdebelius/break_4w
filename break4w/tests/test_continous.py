@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import pandas.util.testing as pdt
 
-from break4w.continous import Continous, _check_limits
+from break4w.continous import Continous
 
 
 class ContinousTest(TestCase):
@@ -29,7 +29,6 @@ class ContinousTest(TestCase):
                            units=self.units,
                            dtype=self.dtype,
                            limits=[1, None],
-                           outliers=[None, 5],
                            )
 
     def test_init_default(self):
@@ -41,149 +40,12 @@ class ContinousTest(TestCase):
         self.assertEqual(test.units, self.units)
         self.assertEqual('Continous', test.type)
         self.assertEqual(test.dtype, float)
-        self.assertEqual(test.bound_lower, None)
-        self.assertEqual(test.bound_upper, None)
-        self.assertEqual(test.outlier_lower, None)
-        self.assertEqual(test.outlier_upper, None)
+        self.assertEqual(test.limits, [None, None])
         self.assertEqual(test.sig_figs, None)
 
     def test_init(self):
         self.assertEqual(self.c.dtype, self.dtype)
-        self.assertEqual(self.c.bound_lower, 1)
-        self.assertEqual(self.c.bound_upper, None)
-        self.assertEqual(self.c.outlier_lower, None)
-        self.assertEqual(self.c.outlier_upper, 5)
-
-    def test_dictionary_update_outliers(self):
-        self.assertEqual(self.c.outlier_lower, None)
-        self.assertEqual(self.c.outlier_upper, 5)
-        self.c.dictionary_update_outliers([2, 7])
-        self.assertEqual(self.c.outlier_lower, 2)
-        self.assertEqual(self.c.outlier_upper, 7)
-
-        log_ = self.c.log[0]
-        self.assertEqual(log_['command'], 'update outlier values')
-        self.assertEqual(log_['transform_type'], 'update dictionary')
-        self.assertEqual(log_['transformation'], 'Outlier values have been '
-                         'updated: None > 2 and 5 > 7.')
-
-    def test_analysis_drop_outliers_none(self):
-        self.c.analysis_remap_dtype(self.map_)
-        self.c.dictionary_update_outliers([None, None])
-        self.c.analysis_drop_outliers(self.map_)
-        pdt.assert_series_equal(
-            self.map_['years_on_team'],
-            pd.Series([1, 2, 2, 4],
-                      index=['Bitty', 'Ransom', 'Holster', 'Johnson'],
-                      name='years_on_team')
-            )
-        log_ = self.c.log[2]
-        self.assertEqual(log_['command'], 'drop outliers')
-        self.assertEqual(log_['transform_type'], 'drop')
-        self.assertEqual(log_['transformation'], 'No values dropped')
-
-    def test_analysis_drop_outliers_left(self):
-        self.c.analysis_remap_dtype(self.map_)
-        self.c.dictionary_update_outliers([2, None])
-        self.c.analysis_drop_outliers(self.map_)
-        pdt.assert_series_equal(
-            self.map_['years_on_team'],
-            pd.Series([np.nan, 2, 2, 4],
-                      index=['Bitty', 'Ransom', 'Holster', 'Johnson'],
-                      name='years_on_team')
-            )
-        self.assertEqual(self.c.log[2]['transformation'], 'values less than 2')
-
-    def test_analysis_drop_outliers_right(self):
-        pdt.assert_series_equal(
-            self.map_['years_on_team'],
-            pd.Series(['1', '2', '2', '4'],
-                      index=['Bitty', 'Ransom', 'Holster', 'Johnson'],
-                      name='years_on_team')
-            )
-        self.c.analysis_remap_dtype(self.map_)
-        self.c.dictionary_update_outliers([None, 3])
-        self.c.analysis_drop_outliers(self.map_)
-        pdt.assert_series_equal(
-            self.map_['years_on_team'],
-            pd.Series([1, 2, 2, np.nan],
-                      index=['Bitty', 'Ransom', 'Holster', 'Johnson'],
-                      name='years_on_team')
-            )
-        self.assertEqual(self.c.log[2]['transformation'],
-                         'values greater than 3')
-
-    def test_analysis_drop_outliers_both(self):
-        pdt.assert_series_equal(
-            self.map_['years_on_team'],
-            pd.Series(['1', '2', '2', '4'],
-                      index=['Bitty', 'Ransom', 'Holster', 'Johnson'],
-                      name='years_on_team')
-            )
-        self.c.analysis_remap_dtype(self.map_)
-        self.c.dictionary_update_outliers([2, 3])
-        self.c.analysis_drop_outliers(self.map_)
-        pdt.assert_series_equal(
-            self.map_['years_on_team'],
-            pd.Series([np.nan, 2, 2, np.nan],
-                      index=['Bitty', 'Ransom', 'Holster', 'Johnson'],
-                      name='years_on_team')
-            )
-        self.assertEqual(self.c.log[2]['transformation'],
-                         'values outside [2, 3]')
-
-    def test_analysis_remap_dtype_pass(self):
-        self.c.analysis_remap_dtype(self.map_)
-        pdt.assert_series_equal(
-            self.map_['years_on_team'],
-            pd.Series([1, 2, 2, 4],
-                      index=['Bitty', 'Ransom', 'Holster', 'Johnson'],
-                      name='years_on_team')
-            )
-        log_ = self.c.log[0]
-        self.assertEqual(log_['command'], 'transformation')
-        self.assertEqual(log_['transform_type'], 'cast data type')
-        self.assertEqual(log_['transformation'], 'convert to int')
-
-    def test_analysis_remap_dtype_error(self):
-        self.map_.loc['Bitty', 'years_on_team'] = 'Freshman'
-        with self.assertRaises(TypeError):
-            self.c.analysis_remap_dtype(self.map_)
-        log_ = self.c.log[0]
-        self.assertEqual(log_['command'], 'transformation')
-        self.assertEqual(log_['transform_type'], 'cast data type')
-        self.assertEqual(log_['transformation'], 'could not convert to int')
-
-    def test_analysis_set_sig_figs_error(self):
-        with self.assertRaises(ValueError):
-            self.c.analysis_set_sig_figs(self.map_)
-        log_ = self.c.log[0]
-        self.assertEqual(log_['command'], 'round significant figures')
-        self.assertEqual(log_['transform_type'], 'correct')
-        self.assertEqual(log_['transformation'], 'Rounding must be defined!')
-
-    def test_analysis_set_sig_figs(self):
-        self.c.sig_figs = 0.1
-        self.c.analysis_remap_dtype(self.map_)
-        self.c.analysis_set_sig_figs(self.map_)
-
-        pdt.assert_series_equal(
-            self.map_['years_on_team'],
-            pd.Series([1, 2, 2, 4],
-                      index=['Bitty', 'Ransom', 'Holster', 'Johnson'],
-                      name='years_on_team')
-            )
-
-        self.assertEqual(self.c.bound_lower, 1.0)
-        self.assertEqual(self.c.bound_upper, None)
-        self.assertEqual(self.c.outlier_lower, None)
-        self.assertEqual(self.c.outlier_upper, 5.0)
-
-        log_ = self.c.log[1]
-        self.assertEqual(log_['command'], 'round significant figures')
-        self.assertEqual(log_['transform_type'], 'correct')
-        self.assertEqual(log_['transformation'],
-                         'Rounded the data to the nearest 0.1.')
+        self.assertEqual(self.c.limits, [1, None])
 
     def test_validate_fail_dtype(self):
         self.c.name = 'position'
@@ -197,8 +59,7 @@ class ContinousTest(TestCase):
                          'the data cannot be cast to int')
 
     def test_validate_no_lim_no_blank_no_ambigious_pass(self):
-        self.c.bound_upper = None
-        self.c.bound_lower = None
+        self.c.limits = [None, None]
         self.c.blanks = None
         self.c.validate(self.map_)
         self.assertEqual(len(self.c.log), 2)
@@ -238,8 +99,7 @@ class ContinousTest(TestCase):
         self.c.blanks = 'missing'
         self.c.ambiguous = 'missing'
         self.c.test = 'test'
-        self.c.bound_upper = 5
-        self.c.bound_lower = None
+        self.c.limits = [None, 5]
         self.map_.loc['Ransom', 'years_on_team'] = 'missing'
         self.c.validate(self.map_)
         self.assertEqual(len(self.c.log), 2)
@@ -257,7 +117,7 @@ class ContinousTest(TestCase):
                          'The values were less than or equal to 5 years.')
 
     def test_validate_both_lim(self):
-        self.c.bound_upper = 5
+        self.c.limits = [1, 5]
         self.c.validate(self.map_)
         self.assertEqual(len(self.c.log), 2)
 
@@ -268,7 +128,7 @@ class ContinousTest(TestCase):
                          'The values were between 1 and 5 years.')
 
     def test_validate_lower_error(self):
-        self.c.bound_lower = 2
+        self.c.limits = [2, None]
         with self.assertRaises(ValueError):
             self.c.validate(self.map_)
         self.assertEqual(len(self.c.log), 2)
@@ -280,7 +140,7 @@ class ContinousTest(TestCase):
                          'There are values less than 2 years.')
 
     def test_validate_upper_error(self):
-        self.c.bound_upper = 3
+        self.c.limits = [None, 3]
         with self.assertRaises(ValueError):
             self.c.validate(self.map_)
         self.assertEqual(len(self.c.log), 2)
@@ -292,8 +152,7 @@ class ContinousTest(TestCase):
                          'There are values greater than 3 years.')
 
     def test_validate_both_error(self):
-        self.c.bound_lower = 2
-        self.c.bound_upper = 3
+        self.c.limits = [2, 3]
         with self.assertRaises(ValueError):
             self.c.validate(self.map_)
 
@@ -308,66 +167,70 @@ class ContinousTest(TestCase):
 
     def test_check_limits_none(self):
         limits = None
-        lower, upper = _check_limits(limits, 'limits')
+        [lower, upper] = self.c._check_limits(limits, 'limits')
         self.assertEqual(lower, None)
         self.assertEqual(upper, None)
 
     def test_check_limits_left_none(self):
         limits = [None, 5]
-        lower, upper = _check_limits(limits, 'limits')
+        [lower, upper] = self.c._check_limits(limits, 'limits')
         self.assertEqual(lower, None)
         self.assertEqual(upper, 5)
 
     def test_check_limits_right_none(self):
         limits = [-3, None]
-        lower, upper = _check_limits(limits, 'limits')
+        [lower, upper] = self.c._check_limits(limits, 'limits')
         self.assertEqual(lower, -3)
         self.assertEqual(upper, None)
 
     def test_check_limits_all_pass(self):
         limits = [-3, 5]
-        lower, upper = _check_limits(limits, 'limits')
+        [lower, upper] = self.c._check_limits(limits, 'limits')
         self.assertEqual(lower, -3)
         self.assertEqual(upper, 5)
 
     def test_check_limits_all_error(self):
         limits = [8, 5]
         with self.assertRaises(ValueError):
-            _check_limits(limits, 'limits')
-
-    def test_to_dict(self):
-        known = {'name': self.name,
-                 'description': self.description,
-                 'units': self.units,
-                 'dtype': self.dtype,
-                 'limits': [1, None],
-                 'outliers': [None, 5],
-                 'clean_name': 'Years On Team'
-                 }
-        type_, test = self.c.to_dict()
-        self.assertEqual(test, known)
-        self.assertEqual('continous', type_)
+            self.c._check_limits(limits, 'limits')
 
     def test_to_series(self):
-        self.c.missing = {"lacross"}
-        self.c.frogs = ['foxtrot', 'whiskey', 'tango']
         known = pd.Series({'name': self.name,
                            'description': self.description,
                            'units': self.units,
                            'dtype': 'int',
                            'type': 'Continous',
-                           'order': '1 | None',
-                           'ambiguous': 'None | 5',
-                           'missing': 'lacross',
-                           'frogs': 'foxtrot | whiskey | tango',
+                           'limits': '1 | None',
                            'clean_name': 'Years On Team',
                            })
-        known = known[['name', 'description', 'dtype', 'type', 
-                       'clean_name', 'missing', 'units', 'frogs',
-                       'order', 'ambiguous']]
+        known = known[['name', 'description', 'dtype', 'type', 'clean_name', 
+                       'limits', 'units']]
 
         test = self.c._to_series()
-        pdt.assert_series_equal(known, test)
+        pdt.assert_series_equal(test, known)
+       
+
+    def test_read_series(self):
+        var_ = pd.Series({'name': self.name,
+                          'description': self.description,
+                          'units': self.units,
+                          'dtype': 'int',
+                          'limits': '1 | None',
+                           })
+        c = Continous._read_series(var_)
+        # Checks set values
+        self.assertTrue(isinstance(c, Continous))
+        self.assertEqual(self.name, c.name)
+        self.assertEqual(self.description, c.description)
+        self.assertEqual(self.dtype, c.dtype)
+        self.assertEqual('Continous', c.type)
+        self.assertEqual(c.limits, [1, None])
+
+    def test_round_trip(self):
+        var_ = self.c._to_series()
+        new_ = Continous._read_series(var_)
+        self.assertEqual(self.c.__dict__, new_.__dict__)
+
 
 if __name__ == '__main__':
     main()

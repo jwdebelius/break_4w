@@ -4,9 +4,8 @@ from break4w.categorical import Categorical
 
 
 class Bool(Categorical):
-    def __init__(self, name, description, clean_name=None, bool_format=None,
-        ambiguous=None, mimarks=False, ontology=None,
-        missing=None, blanks=None, colormap=None):
+    def __init__(self, name, description, dtype=bool, clean_name=None, 
+                  bool_format=None, ref_value=None, **kwargs):
         """A question object for boolean question
 
         Parameters
@@ -54,50 +53,22 @@ class Bool(Categorical):
             t_format = 'true'
             f_format = 'false'
 
-        Categorical.__init__(self,
-                             name=name,
-                             description=description,
-                             dtype=bool,
-                             order=[t_format, f_format],
-                             extremes=[t_format, f_format],
-                             clean_name=clean_name,
-                             ambiguous=ambiguous,
-                             mimarks=mimarks,
-                             ontology=ontology,
-                             missing=missing,
-                             blanks=blanks,
-                             colormap=colormap,
-                             )
+        if ref_value is None:
+            ref_value = f_format
+
+        if 'dtype' not in kwargs:
+            kwargs['dtype'] = dtype
+        if 'order' not in kwargs:
+            kwargs['order'] = [f_format, t_format]
+        if name not in kwargs:
+            kwargs['name'] = name
+        if 'description' not in description:
+            kwargs['description'] = description
+        if 'clean_name' not in kwargs:
+            kwargs['clean_name'] = clean_name
+        if 'ref_value' not in kwargs:
+            kwargs['ref_value'] = ref_value
+
+        Categorical.__init__(self, **kwargs)
         self.type = 'Bool'
-
-    def analysis_convert_to_word(self, map_):
-        """Converts boolean values to 'yes' and 'no'
-
-        Parameters
-        ----------
-        map_ : DataFrame
-            A pandas object containing the data to be analyzed. The
-            Question `name` should be a column in the `map_`.
-
-        """
-
-        def remap_(x):
-            if pd.isnull(x):
-                return x
-            elif (x in self.ambiguous) and (self.ambiguous is not None):
-                return x
-            if isinstance(x, bool) and x:
-                return 'yes'
-            elif isinstance(x, bool) and (not x):
-                return 'no'
-            else:
-                return 'error'
-
-        self.analysis_apply_conversion(map_, remap_, None, False)
-
-        if map_[self.name].apply(lambda x: x == 'error').any():
-            self._update_log('convert boolean', 'replace',
-                             'data could not be standardized')
-            raise ValueError('data could not be standardized')
-        self._update_log('convert boolean', 'replace', 'standarize to yes/no')
 

@@ -27,6 +27,7 @@ class BoolTest(TestCase):
             name=self.name,
             description=self.description,
             bool_format=self.bool,
+            dtype=str,
             ambiguous='TBD',
             )
 
@@ -34,55 +35,54 @@ class BoolTest(TestCase):
         b = Bool(name=self.name,
                  description=self.description,
                  )
-        self.assertEqual(b.order, ['true', 'false'])
+        self.assertEqual(b.order, ['false', 'true'])
         self.assertEqual(b.ambiguous, None)
+        self.assertEqual(self.b.type, 'Bool')
 
     def test_bool_init_ambiguous_and_order(self):
-        self.assertEqual(self.b.type, 'Bool')
-        self.assertEqual(self.b.order, ['True', 'False'])
+        self.assertEqual(self.b.order, ['False', 'True'])
         self.assertEqual(self.b.ambiguous, {'TBD'})
-
-    def test_analysis_convert_to_word_pass(self):
-        self.map_.loc['Holster', 'team_captain'] = np.nan
-        self.b.analysis_remap_dtype(self.map_)
-        self.b.analysis_convert_to_word(self.map_)
-
-        pdt.assert_series_equal(
-            self.map_['team_captain'],
-            pd.Series(['TBD', 'yes', np.nan, 'no'],
-                      index=['Bitty', 'Ransom', 'Holster', 'Johnson'],
-                      name='team_captain')
-            )
-        log_entry = self.b.log[1]
-        self.assertEqual(log_entry['command'], 'convert boolean')
-        self.assertEqual(log_entry['transform_type'], 'replace')
-        self.assertEqual(log_entry['transformation'], 'standarize to yes/no')
-
-    def test_analysis_convert_to_word_fail(self):
-        with self.assertRaises(ValueError):
-            self.b.analysis_convert_to_word(self.map_)
-
-        log_entry = self.b.log[0]
-        self.assertEqual(log_entry['command'], 'convert boolean')
-        self.assertEqual(log_entry['transform_type'], 'replace')
-        self.assertEqual(log_entry['transformation'],
-                         'data could not be standardized')
 
     def test_validate_pass(self):
         self.b.validate(self.map_)
 
-    def test_to_dict(self):
-        known = {'name': self.name,
-                 'description': self.description,
-                 'dtype': bool,
-                 'ambiguous': {'TBD'},
-                 'order': self.bool,
-                 'extremes': self.bool,
-                 'clean_name': 'Team Captain',
-                 }
-        type_, test = self.b.to_dict()
-        self.assertEqual(type_, 'bool')
-        self.assertEqual(test, known)
+    def test_to_series(self):
+        known = pd.Series({'name': self.name,
+                           'description': self.description,
+                           'dtype': 'str',
+                           'type': 'Bool',
+                           'clean_name': 'Team Captain',
+                           'order': 'False | True',
+                           'ref_value': 'False',
+                           'ambiguous': 'TBD',
+                           })
+        test = self.b._to_series()
+        pdt.assert_series_equal(known, test)
+
+    def test_read_series(self):
+        series = pd.Series({'name': self.name,
+                           'description': self.description,
+                           'dtype': 'bool',
+                           'type': 'Bool',
+                           'clean_name': 'Team Captain',
+                           'order': 'False | True',
+                           'ref_value': 'False',
+                           })
+        b = Bool._read_series(series)
+        
+        self.assertTrue(isinstance(b, Bool))
+        self.assertEqual(b.name, self.name)
+        self.assertEqual(b.description, self.description)
+        self.assertEqual(b.clean_name, 'Team Captain')
+        self.assertEqual(b.type, 'Bool')
+        self.assertEqual(b.dtype, bool)
+        self.assertEqual(b.order, [False, True])
+        self.assertFalse(b.ref_value)
+
+    def test_roundtrip(self):
+        var_ = self.b._to_series()
+        new_ = Bool._read_series(var_)
+        self.assertEqual(self.b.__dict__, new_.__dict__)
 
 
 

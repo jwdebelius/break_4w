@@ -39,6 +39,7 @@ class DictionaryTest(TestCase):
             },
             {
                 'name': 'team_captain',
+                'dtype': bool,
                 'description': 'Has the player been given a C or AC?',
                 'missing': 'TBD',
             },
@@ -48,7 +49,6 @@ class DictionaryTest(TestCase):
                                ' ice',
                 'dtype': str,
                 'order': ["Striker", "D-man", "Goalie"],
-                'extremes': ["Striker", "Goalie"],
             },
             {
                 'name': 'nickname',
@@ -101,14 +101,12 @@ class DictionaryTest(TestCase):
     def test_str_(self):
         known = ('Data Dictionary with 4 columns\n'
                  '\tJohnson doesnt know man, this is a weird study.\n'
-                 '-----------------------------------------------------------'
-                 '------------------\n'
+                 '------------------------------------\n'
                  'years_on_team (Continous)\n'
                  'team_captain (Bool)\n'
                  'position (Categorical)\n'
                  'nickname (Question)\n'
-                 '-----------------------------------------------------------'
-                 '------------------')
+                 '------------------------------------')
         test = self.dictionary.__str__()
 
         self.assertEqual(known, test)
@@ -145,6 +143,22 @@ class DictionaryTest(TestCase):
         self.assertEqual(log_['transform_type'], None)
         self.assertEqual(log_['transformation'],
                          'years_on_team was added to the dictionary')
+
+    def test_add_question_series(self):
+        var_ = pd.Series({
+            'name': 'years_on_team',
+            'description': ("How many years the player has been on SMH "
+                            "during Bitty's frog year"),
+            'units': 'years',
+            'dtype': 'int',
+            'order': '1 | None',
+            })
+        self.dictionary.drop_question('years_on_team')
+        self.dictionary.add_question(var_, question_type='continous')
+        test_ = self.dictionary['years_on_team']
+        self.assertTrue(isinstance(test_, Continous))
+        self.assertTrue(test_.limits, [1, None])
+        self.assertFalse('order' in test_.__dict__)
 
     def test_add_question_object_no_record(self):
         # Adds `years_on_team` as a continous quesiton.
@@ -375,96 +389,114 @@ class DictionaryTest(TestCase):
         self.assertEqual(log_.loc[6, 'transformation'], 
             'There were issues with the following columns:\nyears_on_team')
 
-    # def test_to_dataframe(self):
-    #     self.dictionary['nickname'].numeric_mapping = {1: 'Bitty', 
-    #                                                    2: 'Ransom', 
-    #                                                    3: 'Holster'}
-
-
-    #     columns = ['years_on_team', 'team_captain', 'position', 'nickname']
-    #     known = pd.DataFrame(
-    #         data=[columns,
-    #               [c['description'] for c in self.columns],
-    #               ['int', 'bool', 'str', 'str'],
-    #               ['Continous', 'Bool', 'Categorical', 'Question'],
-    #               ['Years On Team', 'Team Captain', 'Position', 'Nickname'],
-    #               ['years', np.nan, np.nan, np.nan],
-    #               [np.nan, 'true | false', 'Striker | Goalie', np.nan],
-    #               [np.nan, 'TBD', np.nan, np.nan],
-    #               ['1 | None', 'true | false', 'Striker | D-man | Goalie', 
-    #                np.nan],
-    #               [np.nan, np.nan, np.nan, '1=Bitty | 2=Ransom | 3=Holster'],
-    #               ],
-    #         index=['name', 'description', 'dtype', 'type', 'clean_name', 
-    #                'units', 'extremes', 'missing', 'order', 'numeric_mapping']
-    #         ).T
-    #     known.set_index('name', inplace=True)
-    #     known = known[['description', 'dtype', 'type', 'clean_name', 'units', 
-    #                    'order', 'missing', 'extremes', 'numeric_mapping']]
-
-    #     pdt.assert_frame_equal(known, self.dictionary.to_dataframe())
-
-    def test_to_dateframe_write_numeric(self):
-        self.dictionary['nickname'].numeric_mapping = {1: 'Bitty', 
-                                                       2: 'Ransom', 
-                                                       3: 'Holster'}
-
-
-        columns = ['years_on_team', 'team_captain', 'position', 'nickname']
-        known = pd.DataFrame(
-            data=[columns,
-                  [c['description'] for c in self.columns],
-                  ['int', 'bool', 'str', 'str'],
-                  ['Continous', 'Bool', 'Categorical', 'Question'],
-                  ['Years On Team', 'Team Captain', 'Position', 'Nickname'],
-                  ['years', np.nan, np.nan, np.nan],
-                  [np.nan, 'true | false', 'Striker | Goalie', np.nan],
-                  [np.nan, 'TBD', np.nan, np.nan],
-                  ['1 | None', 'true | false', 'Striker | D-man | Goalie', 
-                   '1=Bitty | 2=Ransom | 3=Holster'],
-                  ],
-            index=['name', 'description', 'dtype', 'type', 'clean_name', 
-                   'units', 'extremes', 'missing', 'order']
-            ).T
-        known.set_index('name', inplace=True)
-        known = known[['description', 'dtype', 'type', 'clean_name', 'units', 
-                       'order', 'missing', 'extremes']]
-        test = self.dictionary.to_dataframe(write_numeric_codes=True)
-        pdt.assert_frame_equal(known, test)
-
-    def test_to_dataframe_clean(self):
-        self.dictionary['nickname'].numeric_mapping = {1: 'Bitty', 
-                                                       2: 'Ransom', 
-                                                       3: 'Holster'}
-
-
-        columns = ['years_on_team', 'team_captain', 'position', 'nickname']
-        known = pd.DataFrame(
-            data=[columns,
-                  [c['description'] for c in self.columns],
-                  ['int', 'bool', 'str', 'str'],
-                  ['Continous', 'Bool', 'Categorical', 'Question'],
-                  ['Years On Team', 'Team Captain', 'Position', 'Nickname'],
-                  ['years', np.nan, np.nan, np.nan],
-                  [np.nan, 'true | false', 'Striker | Goalie', np.nan],
-                  [np.nan, 'TBD', np.nan, np.nan],
-                  ['1 | None', 'true | false', 'Striker | D-man | Goalie', 
-                   '1=Bitty | 2=Ransom | 3=Holster'],
-                  ],
-            index=['name', 'description', 'dtype', 'type', 'clean_name', 
-                   'units', 'extremes', 'missing', 'order']
-            ).T
-        known.set_index('name', inplace=True)
-        known = known[['description', 'dtype', 'type', 'clean_name', 'units', 
-                       'order', 'missing', 'extremes']]
-        test = self.dictionary.to_dataframe(True, True)
-        pdt.assert_frame_equal(known, test)
-
     def test_to_pandas_stata(self):
         known_vars = {x['name']: x['description'] for x in self.columns}
         test_desc, test_vars = self.dictionary.to_pandas_stata()
         self.assertEqual(test_desc, self.desc)
         self.assertEqual(known_vars, test_vars)
+
+    def test_to_dataframe(self):
+        self.dictionary['nickname'].var_labels = {1: 'Bitty', 
+                                                  2: 'Ransom', 
+                                                  3: 'Holster'}
+
+
+        columns = ['years_on_team', 'team_captain', 'position', 'nickname']
+        known = pd.DataFrame(
+            data=[columns,
+                  [c['description'] for c in self.columns],
+                  ['int', 'bool', 'str', 'str'],
+                  ['Continous', 'Bool', 'Categorical', 'Question'],
+                  ['Years On Team', 'Team Captain', 'Position', 'Nickname'],
+                  ['years', np.nan, np.nan, np.nan],
+                  [np.nan, 'TBD', np.nan, np.nan],
+                  ['1 | None', 'false | true', 'Striker | D-man | Goalie', 
+                   '1=Bitty | 2=Ransom | 3=Holster'],
+                  [np.nan, 'false', 'Striker', np.nan],
+                  ],
+            index=['name', 'description', 'dtype', 'type', 'clean_name', 
+                   'units', 'missing', 'order', 'ref_value']
+            ).T
+        known.set_index('name', inplace=True)
+        known = known[['description', 'dtype', 'type', 'clean_name', 'order', 
+                       'units', 'missing', 'ref_value']]
+        test = self.dictionary.to_dataframe()
+
+        pdt.assert_frame_equal(known, self.dictionary.to_dataframe())
+
+    def test_to_dataframe_clean(self):
+        self.dictionary['nickname'].var_labels = {1: 'Bitty', 
+                                                  2: 'Ransom', 
+                                                  3: 'Holster'}
+
+
+        columns = ['years_on_team', 'team_captain', 'position', 'nickname']
+        known = pd.DataFrame(
+            data=[columns,
+                  [c['description'] for c in self.columns],
+                  ['int', 'bool', 'str', 'str'],
+                  ['Continous', 'Bool', 'Categorical', 'Question'],
+                  ['years', np.nan, np.nan, np.nan],
+                  [np.nan, 'TBD', np.nan, np.nan],
+                  ['1 | None', 'false | true', 'Striker | D-man | Goalie', 
+                   '1=Bitty | 2=Ransom | 3=Holster'],
+                  ],
+            index=['name', 'description', 'dtype', 'type',
+                   'units', 'missing', 'order']
+            ).T
+        known.set_index('name', inplace=True)
+        known = known[['description', 'type', 'dtype', 'order', 'units', 
+                       'missing']]
+        test = self.dictionary.to_dataframe(True, True)
+        pdt.assert_frame_equal(known, test)
+
+    def test_read_dataframe(self):
+        columns = ['years_on_team', 'team_captain', 'position', 'nickname']
+        df_ = pd.DataFrame(
+            data=[columns,
+                  [c['description'] for c in self.columns],
+                  ['int', 'str', 'str', 'str'],
+                  ['Continous', 'Bool', 'Categorical', 'Question'],
+                  ['Years On Team', 'Team Captain', 'Position', 'Nickname'],
+                  ['years', np.nan, np.nan, np.nan],
+                  [np.nan, 'TBD', np.nan, np.nan],
+                  ['1 | None', 'false | true', 'Striker | D-man | Goalie', 
+                   np.nan],
+                  [np.nan, np.nan, np.nan, '1=Bitty | 2=Ransom | 3=Holster'],
+                  [np.nan, 'false', 'Striker', np.nan],
+                  ],
+            index=['name', 'description', 'dtype', 'type', 'clean_name', 
+                   'units', 'missing', 'order', 'var_labels', 'ref_value']
+            ).T
+        df_.set_index('name', inplace=True)
+        test_ = DataDictionary.read_dataframe(df_, description='test?')
+
+        # Checks the initiation
+        self.assertEqual(test_.description, 'test?')
+        # print(test_)
+        self.assertEqual(list(test_.keys()),
+                         ['years_on_team', 'team_captain', 'position',
+                          'nickname'])
+        # Checks the question types. We're assuming here the question objects
+        # have already been tested and it does its job... these are 
+        # obstensibly unit tests and not integration tests.
+        self.assertTrue(isinstance(test_['years_on_team'], Continous))
+        self.assertTrue(isinstance(test_['position'], Categorical))
+        self.assertTrue(isinstance(test_['team_captain'], Bool))
+        self.assertTrue(isinstance(test_['nickname'], Question))
+
+    def test_roundtrip(self):
+        known_ = self.dictionary
+        known_['team_captain'].dtype = str
+        var_ = known_.to_dataframe()
+        desc = self.dictionary.description
+        test_ = self.dictionary.read_dataframe(var_, description=desc)
+
+        self.assertEqual(known_.description, test_.description)
+        self.assertEqual(known_.keys(), test_.keys())
+        self.assertEqual(known_.__dict__, test_.__dict__)
+        for name_, col_ in known_.items():
+            self.assertEqual(col_.__dict__, test_[name_].__dict__)
 
 
 if __name__ == '__main__':
