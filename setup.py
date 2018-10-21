@@ -30,7 +30,7 @@ setup(name='break4w',
       # maintainer_email="jdebelius@ucsd.edu",
       packages=['break4w', 'break4w.tests'],
       install_requires=['numpy >= 1.10.0',
-                        'pandas >= 0.18.0',
+                        'pandas >= 0.23.4',
                         'nose >= 1.3.7',
                         ],
       )
