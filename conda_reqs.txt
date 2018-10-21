@@ -50,7 +50,7 @@ pyqt=5.6.0=py36_2
 python=3.6.0=0
 python-dateutil=2.6.0=py36_0
 pytz=2016.10=py36_0
-pyzmq=17.1.2=py36h1de35cc_0
+pyzmq=17.1.2
 qt=5.6.2=0
 qtconsole=4.4.2=py36_0
 readline=6.2=2
