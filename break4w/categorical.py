@@ -120,6 +120,7 @@ class Categorical(Question):
         self.type = 'Categorical'
 
         self.order = order
+
         if ref_value is None:
             self.ref_value = order[0]
         else:
@@ -160,7 +161,6 @@ class Categorical(Question):
         """Checks the values in the mapping file are correct
 
          Parameters
-        ----------
         map_ : DataFrame
             A pandas object containing the data to be analyzed. The
             Question `name` should be a column in the `map_`.
@@ -219,4 +219,3 @@ class Categorical(Question):
             raise ValueError(m_)
         else:
             self._update_log('validate', 'pass', 'all values were valid')
-
