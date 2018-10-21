@@ -28,6 +28,7 @@ class DataDictionary(OrderedDict):
     """
     default_cols = ['name', 'description', 'type', 'dtype', 'order', 
                     'units', 'ambigious', 'missing', 'notes']
+
     def __init__(self, columns, types, description=None):
         """Initializes the dictionary object
 
@@ -82,7 +83,7 @@ class DataDictionary(OrderedDict):
         return '\n'.join(summary)
 
     def _update_log(self, command, column=None,
-        transform_type=None, transformation=None):
+                    transform_type=None, transformation=None):
         """Used for internal tracking of the columns and data
 
         Every time a Question acts on data, a record should be made of
@@ -118,8 +119,8 @@ class DataDictionary(OrderedDict):
         raise NotImplementedError
 
     def add_question(self, question_data, question_type='',
-        check=True, record=True, var_delim=' | ', code_delim='=', 
-        null_value='None'):
+                     check=True, record=True, var_delim=' | ', code_delim='=', 
+                     null_value='None'):
         """
         Adds a new question object to the data dictionary
 
