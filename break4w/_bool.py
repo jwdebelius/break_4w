@@ -1,6 +1,6 @@
 import pandas as pd
 
-from break4w.categorical import Categorical
+from break4w._categorical import Categorical
 
 
 class Bool(Categorical):

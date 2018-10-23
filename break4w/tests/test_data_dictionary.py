@@ -9,11 +9,11 @@ import numpy as np
 import numpy.testing as npt
 import pandas.util.testing as pdt
 
-from break4w.data_dictionary import DataDictionary
-from break4w.question import Question
-from break4w.categorical import Categorical
-from break4w.bool import Bool
-from break4w.continous import Continous
+from break4w._data_dictionary import DataDictionary
+from break4w._question import Question
+from break4w._categorical import Categorical
+from break4w._bool import Bool
+from break4w._continous import Continous
 
 
 class DictionaryTest(TestCase):

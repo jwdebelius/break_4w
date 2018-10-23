@@ -31,8 +31,7 @@ class DataDictionary(OrderedDict):
     default_cols = ['name', 'description', 'type', 'dtype', 'order', 
                     'units', 'ambigious', 'missing', 'notes']
 
-    def __init__(self, columns, types, description=None, notes=None, references=None,
-        contacts=None):
+    def __init__(self, columns, types, description=None):
         """Initializes the dictionary object
 
         This is a very basic prototype of the data dictionary object
@@ -75,10 +74,6 @@ class DataDictionary(OrderedDict):
                               question_type=type_,
                               record=False,
                               check=False)
-
-        self.notes = notes
-        self.references = references
-        self.contacts = contacts
 
     def __str__(self):
         """

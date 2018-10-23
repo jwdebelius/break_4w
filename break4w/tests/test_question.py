@@ -7,7 +7,7 @@ import numpy as np
 import numpy.testing as npt
 import pandas.util.testing as pdt
 
-from break4w.question import (Question,
+from break4w._question import (Question,
                               _check_cmap
                               )
 

@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from break4w.question import Question
+from break4w._question import Question
 
 
 class Continous(Question):

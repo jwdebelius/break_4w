@@ -5,7 +5,7 @@ import numpy as np
 # import numpy.testing as npt
 import pandas.util.testing as pdt
 
-from break4w.bool import Bool
+from break4w._bool import Bool
 
 
 class BoolTest(TestCase):

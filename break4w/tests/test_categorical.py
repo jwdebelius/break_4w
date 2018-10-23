@@ -5,7 +5,7 @@ import numpy as np
 import numpy.testing as npt
 import pandas.util.testing as pdt
 
-from break4w.categorical import Categorical
+from break4w._categorical import Categorical
 
 class CategoricalTest(TestCase):
 

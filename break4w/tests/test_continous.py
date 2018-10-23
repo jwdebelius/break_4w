@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import pandas.util.testing as pdt
 
-from break4w.continous import Continous
+from break4w._continous import Continous
 
 
 class ContinousTest(TestCase):
