@@ -83,7 +83,7 @@ class DataDictionary(OrderedDict):
         return '\n'.join(summary)
 
     def _update_log(self, command, column=None,
-                    transform_type=None, transformation=None):
+        transform_type=None, transformation=None):
         """Used for internal tracking of the columns and data
 
         Every time a Question acts on data, a record should be made of
@@ -119,8 +119,8 @@ class DataDictionary(OrderedDict):
         raise NotImplementedError
 
     def add_question(self, question_data, question_type='',
-                     check=True, record=True, var_delim=' | ', code_delim='=', 
-                     null_value='None'):
+        check=True, record=True, var_delim=' | ', code_delim='=', 
+        null_value='None'):
         """
         Adds a new question object to the data dictionary
 
@@ -324,7 +324,7 @@ class DataDictionary(OrderedDict):
         """
         pass_ = True
         failures = []
-        validation_messages = []
+        fail_message = []
         self._validate_question_order(map_, check_order)
         for name, question in self.items():
             if question.type == 'Question':
@@ -333,20 +333,23 @@ class DataDictionary(OrderedDict):
                 question.validate(map_)
             except:
                 pass_ = False
-                failures.append(name)
-            if question.type in {'Categorical', 'Bool'}:
-                validation_messages.append(question.log[-2])
-            validation_messages.append(question.log[-1])
+                failures.append(
+                    '\t%s - %s' % (name, question.log[-1]['transformation'])
+                    )
+            self.log.append(question.log[-1])
 
-        self.log.extend(validation_messages)
         if pass_:
             self._update_log('validate', transform_type='pass',
                              transformation='All columns passed')
         else:
             message = ('There were issues with the following columns:\n%s'
                        % '\n'.join(failures))
+            message_l = (('There were issues with the following columns:\n%s'
+                          '\n Please See the log for more details.') 
+                         % '\n'.join([fail.split(' - ')[0].replace('\t', '') 
+                                      for fail in failures]))
             self._update_log('validate', transform_type='error',
-                             transformation=message)
+                             transformation=message_l)
             raise ValueError(message)
 
     def _validate_question_order(self, map_, check_order=True, record=True,
@@ -403,10 +406,10 @@ class DataDictionary(OrderedDict):
 
         if record and pass_:
             self._update_log(command='validate', transform_type='pass',
-                             transformation=message)
+                             transformation=message.replace('\n', ';'))
         elif record and not pass_:
             self._update_log(command='validate', transform_type='fail',
-                             transformation=message)
+                             transformation=message.replace('\n', ';'))
             raise ValueError(message)
         elif not pass_:
             raise ValueError(message)

@@ -34,15 +34,12 @@ class Continous(Question):
             Limits can be expressed in both directions, or in a single
             direction, with `None` replacing the missing value. So, for
             concentration, the limit could be represented as `[0, None]`.
-        outliers : two element iterable of numbers, optional
-            The range of values pertinant to analysis. This is seperate form
-            the range of physical values *possible* for the data (provided in)
-            limits. In the same way as `limits`, bounds can be skipped using
-            `None` for the position.
         sig_figs : int, optional
             The number of signfiicant figures appropriate for the measurement.
             This should be expressed as a decimal (i.e. `sig_figs = 0.1`),
             specifying the units of error on the value.
+        magnitude: int, optional
+            Describes the order of magnitude for the value. For instance
 
         Raises
         ------
@@ -89,6 +86,11 @@ class Continous(Question):
         iseries = map_[self.name].copy()
         message = []
 
+        if self.units is None:
+            unit_str = ''
+        else:
+            unit_str = self.units
+
         # Attempts to remap the data
         if self.blanks is None:
             blanks = set([])
@@ -129,13 +131,13 @@ class Continous(Question):
 
         # Defines the text based on the bounding values
         if (lower_ is not None) and (upper_ is not None):
-            update_text = ('The values were between %s and %s %s.'
+            update_text = ('The values were between %s and %s %s'
                            % (lower_, upper_, self.units))
         elif upper_ is not None:
-            update_text = ('The values were less than or equal to %s %s.'
+            update_text = ('The values were less than or equal to %s %s'
                            % (upper_, self.units))
         elif lower_ is not None:
-            update_text = ('The values were greater than or equal to %s %s.'
+            update_text = ('The values were greater than or equal to %s %s'
                            % (lower_, self.units))
         else:
             update_text = 'there were no limits specified'
@@ -158,15 +160,15 @@ class Continous(Question):
         if lower_issue and upper_issue:
             error = True
             error_string = ('There are values %s and %s %s.'
-                            % (lower_text, upper_text, self.units))
+                            % (lower_text, upper_text, unit_str))
         elif lower_issue:
             error = True
             error_string = ('There are values %s %s.'
-                            % (lower_text, self.units))
+                            % (lower_text, unit_str))
         elif upper_issue:
             error = True
             error_string = ('There are values %s %s.'
-                            % (upper_text, self.units))
+                            % (upper_text, unit_str))
 
         if error:
             self._update_log('validate', 'error',
