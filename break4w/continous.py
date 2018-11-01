@@ -159,15 +159,15 @@ class Continous(Question):
         error = False
         if lower_issue and upper_issue:
             error = True
-            error_string = ('There are values %s and %s %s.'
+            error_string = ('There are values %s and %s %s'
                             % (lower_text, upper_text, unit_str))
         elif lower_issue:
             error = True
-            error_string = ('There are values %s %s.'
+            error_string = ('There are values %s %s'
                             % (lower_text, unit_str))
         elif upper_issue:
             error = True
-            error_string = ('There are values %s %s.'
+            error_string = ('There are values %s %s'
                             % (upper_text, unit_str))
 
         if error:
