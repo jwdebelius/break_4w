@@ -308,6 +308,8 @@ class QuestionTest(TestCase):
                           'ref_value': 'Ransom',
                           'sig_figs': '3',
                           'i_dont_know': np.pi,
+                          'meh': np.nan,
+                          'ambigious': 'Lardo',
                            })
         q = Question._read_series(var_)
 
@@ -326,7 +328,8 @@ class QuestionTest(TestCase):
         self.assertEqual(q.colormap, 'Reds')
         self.assertEqual(q.ref_value, 'Ransom')
         self.assertEqual(q.sig_figs, 3)
-        npt.assert_almost_equal(q.i_dont_know, np.pi, 54)
+        self.assertEqual(q.ambigious, {'Lardo'})
+        npt.assert_almost_equal(q.i_dont_know, np.pi, 5)
 
 
         # Checks defaults
