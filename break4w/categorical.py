@@ -108,7 +108,7 @@ class Categorical(Question):
             The `clean_name` is not a string.
         """
 
-        if dtype not in {str, bool, int, float, tuple}:
+        if dtype not in {str, bool, int, float, tuple, bytes}:
             raise ValueError('%s is not a supported datatype for a '
                              'categorical variable.' % dtype)
 
