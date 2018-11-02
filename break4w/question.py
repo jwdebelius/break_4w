@@ -307,7 +307,7 @@ class Question:
                 return True
 
         if var_str is None:
-            var_str = self.var_str_format[self.dtype] 
+            var_str = self.var_str_format.get(self.dtype, '%s') 
 
         f_ = partial(self._iterable_to_str, code_delim=code_delim, 
                      var_delim=var_delim, var_str=var_str, code_str=code_str, 
