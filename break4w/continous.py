@@ -6,7 +6,8 @@ from break4w.question import Question
 
 class Continous(Question):
 
-    def __init__(self, name, description, units, dtype=float, limits=None, 
+    def __init__(self, name, description, units=np.nan, dtype=float, 
+        limits=None, 
         sig_figs=None, magnitude=1, order=None, **kwargs):
         """A Question object with continous responses
 
