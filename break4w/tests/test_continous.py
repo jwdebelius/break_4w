@@ -19,8 +19,8 @@ class ContinousTest(TestCase):
                                           'Johnson'],
                                  ).T
         self.name = 'years_on_team'
-        self.description = ("How many years the player has been on SMH during "
-                            "Bitty's frog year")
+        self.description = ("How many years the player has been on SMH during"
+                            " Bitty's frog year")
         self.dtype = int
         self.units = 'years'
 
@@ -114,7 +114,7 @@ class ContinousTest(TestCase):
         self.assertEqual(log1['command'], 'validate')
         self.assertEqual(log1['transform_type'], 'pass')
         self.assertEqual(log1['transformation'],
-                         'The values were less than or equal to 5 years.')
+                         'The values were less than or equal to 5 years')
 
     def test_validate_both_lim(self):
         self.c.limits = [1, 5]
@@ -125,7 +125,7 @@ class ContinousTest(TestCase):
         self.assertEqual(log1['command'], 'validate')
         self.assertEqual(log1['transform_type'], 'pass')
         self.assertEqual(log1['transformation'],
-                         'The values were between 1 and 5 years.')
+                         'The values were between 1 and 5 years')
 
     def test_validate_lower_error(self):
         self.c.limits = [2, None]
@@ -137,7 +137,7 @@ class ContinousTest(TestCase):
         self.assertEqual(log1['command'], 'validate')
         self.assertEqual(log1['transform_type'], 'error')
         self.assertEqual(log1['transformation'],
-                         'There are values less than 2 years.')
+                         'There are values less than 2 years')
 
     def test_validate_upper_error(self):
         self.c.limits = [None, 3]
@@ -149,7 +149,7 @@ class ContinousTest(TestCase):
         self.assertEqual(log1['command'], 'validate')
         self.assertEqual(log1['transform_type'], 'error')
         self.assertEqual(log1['transformation'],
-                         'There are values greater than 3 years.')
+                         'There are values greater than 3 years')
 
     def test_validate_both_error(self):
         self.c.limits = [2, 3]
@@ -163,7 +163,7 @@ class ContinousTest(TestCase):
         self.assertEqual(log1['transform_type'], 'error')
         self.assertEqual(log1['transformation'],
                          'There are values less than 2 and greater than'
-                         ' 3 years.')
+                         ' 3 years')
 
     def test_check_limits_none(self):
         limits = None

@@ -189,7 +189,7 @@ class Continous(Question):
                 if ((lower is not None) and (upper is not None) and
                         (lower > upper)):
                     raise ValueError('The lower limit cannot be greater than '
-                                     'the upper for %s.')
+                                     'the upper for %s')
         else:
             lower, upper = (None, None)
 
