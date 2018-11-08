@@ -171,7 +171,7 @@ class DataDictionary(OrderedDict):
             existing column.
 
         """
-        error = False
+        error1 = False
 
         # Converts to a Question object
         question_object = type_lookup.get(question_type.lower(), Question)
@@ -182,15 +182,25 @@ class DataDictionary(OrderedDict):
                 question_data, var_delim=var_delim, 
                 code_delim=code_delim, null_value=null_value,
                 )
-
         elif isinstance(question_data, dict):
             question_data = question_object(**question_data)
+        elif isinstance(question_data, Question):
+            pass
+        else:
+            message = ('question_data must be a Question, dict, or'
+                       ' Series')
+            if record:
+                self._update_log('add column', 
+                                 column=None, 
+                                 transformation=message,
+                                 transform_type='error')
+            raise ValueError(message)
 
         name = question_data.name
 
         # Checks if the question is in the dictionary
         if (name in self.keys()) and check:
-            error = True
+            error1 = True
             message = '%s already has a dictionary entry' % name
             transform_type = 'error'
         else:
@@ -205,10 +215,11 @@ class DataDictionary(OrderedDict):
                              transform_type=transform_type)
 
         # Raises an error or updates the dictionary, as appropriate
-        if error:
+        if error1:
             raise ValueError(message)
         else:
             self[name] = question_data
+            self.name = question_data
 
     def get_question(self, name):
         """
@@ -389,13 +400,21 @@ class DataDictionary(OrderedDict):
                     'not in the mapping file, and %i from the mapping'
                     ' file not in the data dictionary.'
                     % (len(in_dict), len(in_map)))
+            if len(in_dict) > 0:
+                not_map = ('In the dictionary but not in the map: \n\t%s\n' 
+                           % ';'.join(in_dict))
+            else:
+                not_map = ''
+
+            if len(in_map) > 0:
+                t_ = '\nIn the map but not in the dictionary:\n\t%s\n'
+                not_dict = t_ % ';'.join(in_map)
+            else:
+                not_dict = ''
+
             if verbose:
-                message = '%s\n%s' % (
-                    text,
-                    'In the dictionary but not in the map: \n%s\n\n'
-                    'In the map but not in the dictionary: \n%s\n\n'
-                    % ('\n'.join(in_dict), '\n'.join(in_map))
-                    )
+                message = '%s%s%s' % (text, not_map, not_dict)
+                # message = not_dict
             else:
                 message = text
 
@@ -406,10 +425,10 @@ class DataDictionary(OrderedDict):
 
         if record and pass_:
             self._update_log(command='validate', transform_type='pass',
-                             transformation=message.replace('\n', ';'))
+                             transformation=message)
         elif record and not pass_:
             self._update_log(command='validate', transform_type='fail',
-                             transformation=message.replace('\n', ';'))
+                             transformation=message)
             raise ValueError(message)
         elif not pass_:
             raise ValueError(message)
@@ -543,6 +562,14 @@ class DataDictionary(OrderedDict):
 
         return cls(columns=cols, types=types, description=description)
 
+    def read_stata(cls, iter_):
+        """..."""
+        description = iter_.data_label
+        dtypes = iter_.dtypelist
+        order_ = iter_.value_labels()
+        cols = iter_.varlist
+        col_desc = iter_.variable_labels()
+        
 
 
 

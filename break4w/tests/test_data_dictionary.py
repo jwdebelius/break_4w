@@ -195,6 +195,10 @@ class DictionaryTest(TestCase):
         self.assertEqual(log_['transformation'],
                          'years_on_team was added to the dictionary')
 
+    def test_add_question_error(self):
+        with self.assertRaises(ValueError):
+            self.dictionary.add_question('')
+
     def test_get_question(self):
         test = self.dictionary.get_question('years_on_team')
         # Checks the returned value
@@ -315,9 +319,8 @@ class DictionaryTest(TestCase):
             log_['transformation'],
             'There are 0 columns in the data dictionary '
             'not in the mapping file, and 1 from the mapping'
-            ' file not in the data dictionary.\nIn the dictionary but not in '
-            'the map: \n\n\nIn the map but not in the dictionary: \nnickname\n'
-            '\n'
+            ' file not in the data dictionary.\nIn the map but not in the '
+            'dictionary:\n\tnickname\n'
             )
 
     def test_validate_question_check_order_error_true(self):
@@ -353,25 +356,25 @@ class DictionaryTest(TestCase):
         self.assertEqual(len(self.dictionary.log), 0)
 
     def test_validate_pass(self):
-        kcolumns = pd.Series([None, 'years_on_team', 'team_captain',
-                              'team_captain', 'position', 'position', None],
+        kcolumns = pd.Series([None, 'years_on_team','team_captain', 
+                              'position', None],
                              name='column')
         self.dictionary.validate(self.map_)
         # Checks the log
-        self.assertEqual(len(self.dictionary.log), 7)
+        self.assertEqual(len(self.dictionary.log), 5)
         log_ = pd.DataFrame(self.dictionary.log)
         self.assertTrue(np.all(log_['command'] == 'validate'))
         self.assertTrue(np.all(log_['transform_type'] == 'pass'))
         pdt.assert_series_equal(kcolumns, log_['column'])
-        self.assertEqual(log_.loc[6, 'transformation'], 'All columns passed')
+        self.assertEqual(log_.iloc[-1]['transformation'], 
+                         'All columns passed')
 
     def test_validate_error(self):
         # Sets up known series
         kcolumns = pd.Series([None, 'years_on_team', 'team_captain',
-                              'team_captain', 'position', 'position', None],
+                              'position', None],
                              name='column')
-        kvalidate = pd.Series(['pass', 'error', 'pass', 'pass', 'pass',
-                               'pass', 'error'],
+        kvalidate = pd.Series(['pass', 'error', 'pass', 'pass', 'error'],
                               name='transform_type')
 
         self.map_.loc['Johnson', 'years_on_team'] = \
@@ -381,13 +384,14 @@ class DictionaryTest(TestCase):
         with self.assertRaises(ValueError):
             self.dictionary.validate(self.map_)
         # Checks the log
-        self.assertEqual(len(self.dictionary.log), 7)
+        self.assertEqual(len(self.dictionary.log), 5)
         log_ = pd.DataFrame(self.dictionary.log)
         self.assertTrue(np.all(log_['command'] == 'validate'))
         pdt.assert_series_equal(kvalidate, log_['transform_type'])
         pdt.assert_series_equal(kcolumns, log_['column'])
-        self.assertEqual(log_.loc[6, 'transformation'], 
-            'There were issues with the following columns:\nyears_on_team')
+        self.assertEqual(log_.iloc[-1]['transformation'], 
+            'There were issues with the following columns:\nyears_on_team\n'
+            'Please See the log for more details.')
 
     def test_to_pandas_stata(self):
         known_vars = {x['name']: x['description'] for x in self.columns}
@@ -494,7 +498,10 @@ class DictionaryTest(TestCase):
 
         self.assertEqual(known_.description, test_.description)
         self.assertEqual(known_.keys(), test_.keys())
-        self.assertEqual(known_.__dict__, test_.__dict__)
+        self.assertEqual(
+            {k: v for k, v in known_.__dict__.items() if not isinstance(v, Question)},
+            {k: v for k, v in test_.__dict__.items() if not isinstance(v, Question)}
+            )
         for name_, col_ in known_.items():
             self.assertEqual(col_.__dict__, test_[name_].__dict__)
 
