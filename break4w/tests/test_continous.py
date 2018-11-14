@@ -1,6 +1,7 @@
 from unittest import TestCase, main
 
 import numpy as np
+import numpy.testing as npt
 import pandas as pd
 import pandas.util.testing as pdt
 
@@ -35,9 +36,8 @@ class ContinousTest(TestCase):
         test = Continous(
             name=self.name,
             description=self.description,
-            units=self.units
             )
-        self.assertEqual(test.units, self.units)
+        self.assertTrue(np.isnan(test.units))
         self.assertEqual('Continous', test.type)
         self.assertEqual(test.dtype, float)
         self.assertEqual(test.limits, [None, None])
@@ -79,6 +79,7 @@ class ContinousTest(TestCase):
     def test_validate_lower_pass_blank_list_ambigious_list(self):
         self.c.blanks = ['missing']
         self.c.ambiguous = ['test']
+        self.c.units = None
         self.map_.loc['Ransom', 'years_on_team'] = 'missing'
         self.c.validate(self.map_)
         self.assertEqual(len(self.c.log), 2)
@@ -93,7 +94,7 @@ class ContinousTest(TestCase):
         self.assertEqual(log1['command'], 'validate')
         self.assertEqual(log1['transform_type'], 'pass')
         self.assertEqual(log1['transformation'],
-                         'The values were greater than or equal to 1 years.')
+                         'The values were greater than or equal to 1 ')
 
     def test_validate_greater_pass_blank_str_ambigious_str(self):
         self.c.blanks = 'missing'

@@ -87,7 +87,7 @@ class Continous(Question):
         iseries = map_[self.name].copy()
         message = []
 
-        if self.units is None:
+        if pd.isnull(self.units):
             unit_str = ''
         else:
             unit_str = self.units
@@ -133,13 +133,13 @@ class Continous(Question):
         # Defines the text based on the bounding values
         if (lower_ is not None) and (upper_ is not None):
             update_text = ('The values were between %s and %s %s'
-                           % (lower_, upper_, self.units))
+                           % (lower_, upper_, unit_str))
         elif upper_ is not None:
             update_text = ('The values were less than or equal to %s %s'
-                           % (upper_, self.units))
+                           % (upper_, unit_str))
         elif lower_ is not None:
             update_text = ('The values were greater than or equal to %s %s'
-                           % (lower_, self.units))
+                           % (lower_, unit_str))
         else:
             update_text = 'there were no limits specified'
 
