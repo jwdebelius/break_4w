@@ -1,3 +1,8 @@
+"""
+I need really good documentation for this module that I haven't begun to
+write yet. This will be really important?
+"""
+
 from collections import OrderedDict
 import datetime
 import pydoc
@@ -5,10 +10,13 @@ import pydoc
 import numpy as np
 import pandas as pd
 
+from pandas.api.types import CategoricalDtype
+
 from break4w.question import Question
 from break4w.categorical import Categorical
 from break4w.bool import Bool
 from break4w.continous import Continous
+import break4w._defaults as b4wdefaults
 
 type_lookup = {'continous': Continous,
                'categorical': Categorical,
@@ -20,10 +28,27 @@ type_lookup = {'continous': Continous,
                }
 
 
+
 class DataDictionary(OrderedDict):
     """
-    Builds a data dictionary
+    Generates a data dictionary object
 
+    Parameters
+    ----------
+    columns: list of dicts
+        A list of dictionaries representing each column in the metadata. 
+        The dictionaries must contain a `name` key, describing the column 
+        name. The values in the dictionary should the variables needed 
+        for each type of question object in a data dictionary.
+    types: list of strings
+        A description of the type of question being asked. These come 
+        from a relatively controlled vocabulary and include types such as 
+        `"continous", "categorical", "bool"`. If the question type does 
+        not conform to the controlled vocabulary, the column will be 
+        read as a Question object with limited functionality.
+    description: str
+        A description of the data dictionary or study of no more than
+        80 characters.
 
     """
     default_cols = ['name', 'description', 'type', 'dtype', 'order', 
@@ -33,23 +58,6 @@ class DataDictionary(OrderedDict):
         """Initializes the dictionary object
 
         This is a very basic prototype of the data dictionary object
-
-        Parameters
-        ----------
-        columns: list of dicts
-            A list of dictionaries representing each column in the metadata. 
-            The dictionaries must contain a `name` key, describing the column 
-            name. The values in the dictionary should the variables needed 
-            for each type of question object in a data dictionary.
-        types: list of strings
-            A description of the type of question being asked. These come 
-            from a relatively controlled vocabulary and include types such as 
-            `"continous", "categorical", "bool"`. If the question type does 
-            not conform to the controlled vocabulary, the column will be 
-            read as a Question object with limited functionality.
-        description: str
-            A description of the data dictionary or study of no more than
-            80 characters.
         """
 
         self.log = []
@@ -75,11 +83,13 @@ class DataDictionary(OrderedDict):
         summary = ['Data Dictionary with %i columns'  % len(self)]
         if len(self.description) > 0:
             summary.append('\t%s' % self.description)
-        summary.append('------------------------------------')
+        summary.append('-----------------------------------------------------'
+                       '---------------------------')
                   
         for col in self.values():
             summary.append('%s (%s)' % (col.name, col.type))
-        summary.append('------------------------------------')
+        summary.append('-----------------------------------------------------'
+                       '---------------------------')
         return '\n'.join(summary)
 
     def _update_log(self, command, column=None,
@@ -219,7 +229,6 @@ class DataDictionary(OrderedDict):
             raise ValueError(message)
         else:
             self[name] = question_data
-            self.name = question_data
 
     def get_question(self, name):
         """
@@ -356,7 +365,7 @@ class DataDictionary(OrderedDict):
             message = ('There were issues with the following columns:\n%s'
                        % '\n'.join(failures))
             message_l = (('There were issues with the following columns:\n%s'
-                          '\n Please See the log for more details.') 
+                          '\nPlease See the log for more details.') 
                          % '\n'.join([fail.split(' - ')[0].replace('\t', '') 
                                       for fail in failures]))
             self._update_log('validate', transform_type='error',
@@ -402,13 +411,13 @@ class DataDictionary(OrderedDict):
                     % (len(in_dict), len(in_map)))
             if len(in_dict) > 0:
                 not_map = ('In the dictionary but not in the map: \n\t%s\n' 
-                           % ';'.join(in_dict))
+                           % '; '.join(in_dict))
             else:
                 not_map = ''
 
             if len(in_map) > 0:
                 t_ = '\nIn the map but not in the dictionary:\n\t%s\n'
-                not_dict = t_ % ';'.join(in_map)
+                not_dict = t_ % '; '.join(in_map)
             else:
                 not_dict = ''
 
@@ -506,6 +515,9 @@ class DataDictionary(OrderedDict):
 
         return self.description, variable_desc
 
+    def to_ddi_xml(self):
+        pass
+
     @classmethod
     def read_dataframe(cls, df_, description=None, var_delim=' | ', 
         code_delim='=', null_value='None'):
@@ -562,15 +574,13 @@ class DataDictionary(OrderedDict):
 
         return cls(columns=cols, types=types, description=description)
 
-    def read_stata(cls, iter_):
-        """..."""
-        description = iter_.data_label
-        dtypes = iter_.dtypelist
-        order_ = iter_.value_labels()
-        cols = iter_.varlist
-        col_desc = iter_.variable_labels()
-        
+    # @classmethod
+    def to_usgs_xml(self):
+        """Converts the data dictionary to a usgs xlm format"""
+        pass
 
-
+    @classmethod
+    def read_stata(cls, iter_, ):
+        pass
 
 

@@ -6,48 +6,20 @@ import pydoc
 import numpy as np
 import pandas as pd
 
-true_values = {'yes', 'true', 1, 1.0, True}
-false_values = {'no', 'false', 0, 0.0, False}
-ebi_null = {'not applicable',
-            'missing: not provided',
-            'missing: not collected',
-            'missing: restricted',
-            'not provided',
-            'not collected',
-            'restricted',
-            }
-properties_str = {'name', 'description', 'clean_name', 'notes', 'units',
-                      'original_name', 'var_labels', 'var_numbers', 'type'}
-properties_num = {'frequency_cutoff', 'sig_figs', 'magnitude'}
-properties_bin = {'free_response', 'mimarks', 'ordinal'}
-properties_set = {'source_columns', 'ontology', 'derivative_columns', 
-                  'blanks', 'ambigious'}
+import break4w._defaults as b4wdefaults
 
 
 class Question:
     u"""A base object class for handling Data dictionary entries
     """
-    true_values = {'yes', 'true', 1, 1.0, True}
-    false_values = {'no', 'false', 0, 0.0, False}
-    ebi_null = {'not applicable',
-                'missing: not provided',
-                'missing: not collected',
-                'missing: restricted',
-                'not provided',
-                'not collected',
-                'restricted',
-                }
-    defaults = {'missing': ebi_null,
-                'true_values': true_values,
-                'false_values': false_values,
-                'mimarks': False,
-                'free_response': False,
-                'magnitude': 1,
-                }
-
+    true_values = b4wdefaults.true_values
+    false_values = b4wdefaults.false_values
+    ebi_null = b4wdefaults.ebi_null
+    defaults = b4wdefaults.defaults
     var_str_format = {str: '%s', int: '%i', float: '%1.5f', bool: '%s'}
 
     def __init__(self, name, description, dtype, clean_name=None,
+        question=None, format=None,
         free_response=False, mimarks=False, ontology=None,
         missing=None, blanks=None, colormap=None, original_name=None,
         source_columns=None, derivative_columns=None, notes=None,
@@ -316,6 +288,14 @@ class Question:
         return pd.Series({k: f_(v) for k, v in tent_dict 
                          if _check_dict(k, v)})
 
+    def _to_usgs(self):
+        """Converts question object to usgs xml format
+
+        see: https://www.usgs.gov/products/data-and-tools/data-management/data-dictionaries
+        """
+        pass
+
+
     @classmethod
     def _read_series(cls, var_, var_delim=' | ', code_delim='=', null_value='None'):
         """
@@ -365,11 +345,11 @@ class Question:
                 return [pydoc.locate(v_.title()) for v_ in s_]
             elif k in {'order', 'limits'}:
                 return cls._iterable_from_str(v, return_type=list, **i_param)
-            elif k in properties_num:
+            elif k in b4wdefaults.properties_num:
                 return float(v)
-            elif k in properties_bin:
+            elif k in b4wdefaults.properties_bin:
                 return pydoc.locate(v.title())
-            elif k in properties_set:
+            elif k in b4wdefaults.properties_set:
                 return cls._iterable_from_str(v, **i_param)
             else:
                 return v
@@ -397,8 +377,9 @@ class Question:
             The datatype in which the responses should be represented. (i.e.
             `float`, `int`, `str`).
         placeholders : set, optional
-            Acceptable values to be ignored representing either placeholder values
-            such as text for missing values, blanks, or ambigious measurements.
+            Acceptable values to be ignored representing either placeholder 
+            values such as text for missing values, blanks, or ambigious 
+            measurements.
         true_values : set, optional
             Acceptable values for true values for boolean data
         false_values : set, optional
