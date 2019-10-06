@@ -74,6 +74,32 @@ class CategoricalTest(TestCase):
                            var_labels={1: 'Striker', 2: 'D-man', 3: 'Goalie'},
                            )
 
+    def test_str_missing_order(self):
+        c = Categorical(self.name, self.description, dtype=int, order=[1, 2, 3],
+                        var_labels='1=Striker | 2=D-man | 3=Goalie', missing=['manager'],
+                        blanks=['Lax-Bro'])
+        known= """
+------------------------------------------------------------------------------------
+position (Categorical int)
+    Where the player can normally be found on the ice
+------------------------------------------------------------------------------------
+mapping     1=Striker
+            2=D-man
+            3=Goalie
+missing     manager
+blanks      Lax-Bro
+------------------------------------------------------------------------------------
+        """
+        test = c.__str__()
+        self.assertEqual(test, known)
+
+    def test_str_label_mapping(self):
+        Categorical(self.name,
+                           self.description,
+                           self.dtype,
+                           self.order)
+
+
 
     def test_update_order(self):
         # Checks the current order

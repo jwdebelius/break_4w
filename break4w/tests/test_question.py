@@ -122,7 +122,12 @@ class QuestionTest(TestCase):
         self.assertEqual(q.missing, set(['Bitty']))
 
     def test__str__(self):
-        known = '%s (%s)\n\t%s' % (self.name, 'Question', self.description)
+        known =  """
+------------------------------------------------------------------------------------
+player_name (Question str)
+    Samwell Hockey Players
+------------------------------------------------------------------------------------
+        """
         test = self.q.__str__()
         self.assertEqual(known, test)
 

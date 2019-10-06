@@ -126,7 +126,7 @@ class Question:
         else:
             self.missing = set(missing)
         self.blanks = blanks
-        self.colormap = colormap
+        self.colormap = _check_cmap(colormap)
         self.original_name = original_name
 
         if source_columns is None:
@@ -147,7 +147,17 @@ class Question:
 
     def __str__(self):
         u"""Prints a nice summary of the object"""
-        return '%s (%s)\n\t%s' % (self.name, self.type, self.description)
+        s_ = """
+------------------------------------------------------------------------------------
+{name} (Question {dtype_str})
+    {description}
+------------------------------------------------------------------------------------
+        """
+        return s_.format(**{
+            'name': self.name,
+            'dtype_str': self._iterable_to_str(self.dtype),
+            'description': self.description,
+            })
 
     def _update_log(self, command, transform_type, transformation):
         u"""A helper function to update the in-object documentation object
@@ -426,11 +436,7 @@ class Question:
 
         return remap_
 
+def _check_cmap(cmap, num_colors=None, range=None):
+    return cmap
 
-def _check_cmap(x):
-    """Checks that a read object qualifies as a colormap
-
-    To be developed further!
-    """
-    return x
 

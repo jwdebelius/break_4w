@@ -141,6 +141,55 @@ class Categorical(Question):
 
         self.ambiguous = self._iterable_from_str(ambiguous)
 
+    def __str__(self):
+        """
+        Prints a nice summary of the object
+        """
+        s_ = """
+------------------------------------------------------------------------------------
+{name} (Categorical {dtype})
+    {description}
+------------------------------------------------------------------------------------
+{mapping}
+missing     {missing}
+blanks      {blanks}
+------------------------------------------------------------------------------------
+        """
+        def _check_missing(missing):
+            if missing == self.ebi_null:
+                return 'default'
+            else:
+                return self._iterable_to_str(
+                    missing,  
+                    var_str='%s',
+                    )
+        def _check_mapping(order, var_labels=None):
+            var_str = self.var_str_format.get(self.dtype, '%s')
+            if pd.isnull(var_labels):
+                labels = ''.join([
+                    'order       ', 
+                    self._iterable_to_str(order, var_str=var_str, 
+                                          var_delim=' | ')
+                    ])
+                if len(labels) > 85:
+                    return labels.replace(' | ', '\n            ')
+                else:
+                    return labels
+            else:
+                return ''.join([
+                    'mapping     ', 
+                    self._iterable_to_str(var_labels, var_str=var_str, 
+                                          code_delim='=', 
+                                          var_delim='\n            ')
+                    ])
+        return s_.format(name=self.name, 
+                         dtype=self._iterable_to_str(self.dtype),
+                         description=self.description,
+                         mapping=_check_mapping(self.order, self.var_labels),
+                         missing=_check_missing(self.missing),
+                         blanks=self._iterable_to_str(self.blanks)
+                         )
+
     def _update_order(self, remap_):
         """Updates the order and earlier order arguments
 

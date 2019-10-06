@@ -47,6 +47,79 @@ class ContinousTest(TestCase):
         self.assertEqual(self.c.dtype, self.dtype)
         self.assertEqual(self.c.limits, [1, None])
 
+    def test_str_none(self):
+        c = Continous(
+            name=self.name,
+            description=self.description,
+            dtype=self.dtype,
+            )
+        test = c.__str__()
+        known = """
+        ------------------------------------------------------------------------------------
+        years_on_team (Continous int)
+            How many years the player has been on SMH during Bitty's frog year
+        ------------------------------------------------------------------------------------
+        limits      None
+        units       years_on_team is unitless
+        missing     default
+        blanks      None
+        ------------------------------------------------------------------------------------
+        """
+        self.assertEqual(test, known)
+
+    def test_str_units_no_mag(self):
+        self.c.missing = set(['NA'])
+        known = """
+        ------------------------------------------------------------------------------------
+        years_on_team (Continous int)
+            How many years the player has been on SMH during Bitty's frog year
+        ------------------------------------------------------------------------------------
+        limits      1 | None
+        units       years
+        missing     NA
+        blanks      None
+        ------------------------------------------------------------------------------------
+        """
+        test = self.c.__str__()
+        self.assertEqual(test, known)
+
+    def test_str_mag_no_units(self):
+        c = Continous(
+            name=self.name,
+            description=self.description,
+            magnitude=10,
+            dtype=self.dtype,
+            )
+        test = c.__str__()
+        known = """
+------------------------------------------------------------------------------------
+years_on_team (Continous int)
+    How many years the player has been on SMH during Bitty's frog year
+------------------------------------------------------------------------------------
+limits      None
+units       10 (unitless)
+missing     default
+blanks      None
+------------------------------------------------------------------------------------
+        """
+        self.assertEqual(test, known)
+
+    def test_str_mag_and_units(self):
+        self.c.magnitude = 10
+        test = self.c.__str__()
+        known = """
+------------------------------------------------------------------------------------
+years_on_team (Continous int)
+    How many years the player has been on SMH during Bitty's frog year
+------------------------------------------------------------------------------------
+limits      1 | None
+units       10 years
+missing     default
+blanks      None
+------------------------------------------------------------------------------------
+        """
+        self.assertEqual(test, known)
+
     def test_validate_fail_dtype(self):
         self.c.name = 'position'
         with self.assertRaises(TypeError):

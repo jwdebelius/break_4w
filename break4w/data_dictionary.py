@@ -75,6 +75,7 @@ class DataDictionary(OrderedDict):
                               question_type=type_,
                               record=False,
                               check=False)
+        self.columns = list(self.keys())
 
     def __str__(self):
         """
@@ -84,12 +85,12 @@ class DataDictionary(OrderedDict):
         if len(self.description) > 0:
             summary.append('\t%s' % self.description)
         summary.append('-----------------------------------------------------'
-                       '---------------------------')
+                       '-------------------------------')
                   
         for col in self.values():
-            summary.append('%s (%s)' % (col.name, col.type))
+            summary.append('%s (%s)\n\t%s' % (col.name, col.type, col.description))
         summary.append('-----------------------------------------------------'
-                       '---------------------------')
+                       '-------------------------------')
         return '\n'.join(summary)
 
     def _update_log(self, command, column=None,
@@ -229,6 +230,7 @@ class DataDictionary(OrderedDict):
             raise ValueError(message)
         else:
             self[name] = question_data
+            self.columns = list(self.keys())
 
     def get_question(self, name):
         """
@@ -271,6 +273,7 @@ class DataDictionary(OrderedDict):
         """
         if name in self.keys():
             del self[name]
+            self.columns = list(self.keys())
             self._update_log(command='remove question', column=name)
 
     def update_question(self, update, name=None):
@@ -445,21 +448,23 @@ class DataDictionary(OrderedDict):
     def to_dataframe(self, clean=False, val_delim=' | ', code_delim='='):
         u"""Converts data dictionary to a pandas dataframe
 
-        Returns
-        -------
-        DataFrame
-            A dataframe summary of the contents of the data dictionary. It
-            will include the following columns:
-                * "name": The name of the variable
-                * "description": A description of the variable of no more than
-                             80 characters
-                * "dtype": a string representation of python data types (i.e 
-                           str, int, bool, etc)
-                * "clean_name": the cleaned up column name
-            It may also contain columns describing the variable order,
-            limits on the data, units, etc.
+        Parameters
+        ----------
         clean: bool, optional
-            Returns a subset of columns for the data dictionary
+            Returns a subset of columns for the data dictionary. When True,
+            the data dicitonary will return the following columns:
+                * `name` -- the name of the column
+                * `description` -- the 80 character description
+                * `type` -- the type of question (Continous, Question, 
+                    Categorical, or Boolean)
+                * `dtype` -- the datatype for the pandas column.
+                * `order` -- the order of data for categorical objects or
+                    range of values for continous values
+                * `units` -- units for continous values
+                * `ambigious` -- values for ambigious results
+                * `missing` -- values for missing values
+                * `notes` -- any notes passed into the data dictionary
+                    object to be retained
         val_delim: str, optional
             The seperator between values in the "order" column.
         code_delim: str, optional
@@ -476,11 +481,12 @@ class DataDictionary(OrderedDict):
         -------
 
         """
+
         cols = []
         for col in self.values():
             ser_ = col._to_series()
-            if isinstance(col, Continous):
-                ser_.rename({'limits': 'order'}, inplace=True)
+            # if isinstance(col, Continous):
+            ser_.rename({'limits': 'order'}, inplace=True)
             cols.append(ser_)
 
         df_ = pd.concat(axis=1, sort=False, objs=cols).T

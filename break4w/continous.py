@@ -68,6 +68,57 @@ class Continous(Question):
         self.type = 'Continous'
         self.sig_figs = sig_figs
 
+    def __str__(self):
+        """
+        Prints a nice summary of the object
+        """
+        s_ = """
+------------------------------------------------------------------------------------
+{name} (Continous {dtype_str})
+    {description}
+------------------------------------------------------------------------------------
+limits      {limits}
+units       {units}
+missing     {missing}
+blanks      {blanks}
+------------------------------------------------------------------------------------
+        """
+        def _check_limits(limits):
+            if limits == [None, None]:
+                return 'None'
+            else: 
+                return self._iterable_to_str(
+                    limits,  
+                    var_str=self.var_str_format.get(self.dtype, '%s')
+                    )
+
+        def _check_units(units, magnitude):
+            if (((magnitude is None) | (magnitude == 1)) & pd.isnull(units)):
+                return '{name} is unitless'.format(name=self.name)
+            elif ((magnitude is None) | (magnitude == 1)):
+                return units
+            elif pd.isnull(units):
+                return '{mag} (unitless)'.format(mag=magnitude)
+            else:
+                return '{mag} {units}'.format(mag=magnitude, units=units)
+
+        def _check_missing(missing):
+            if missing == self.ebi_null:
+                return 'default'
+            else:
+                return self._iterable_to_str(
+                    missing,  
+                    var_str='%s',
+                    )
+        return s_.format(name=self.name, 
+                         dtype_str=self._iterable_to_str(self.dtype),
+                         description=self.description,
+                         limits=_check_limits(self.limits),
+                         units=_check_units(self.units, self.magnitude),
+                         missing=_check_missing(self.missing),
+                         blanks=self._iterable_to_str(self.blanks)
+                         )
+
     def validate(self, map_):
         """
         Checks values fall into the acceptable range for this type of data.
@@ -195,4 +246,39 @@ class Continous(Question):
 
         return [lower, upper]
 
+    @staticmethod
+    def _check_cmap(x, num_colors=None):
+        """
+        Checks that a read object qualifies as a colormap
+        """
+        if isinstance(x, str):
+            if colors.is_color_like(x):
+                c = np.array([colors.to_rgba(x)])
+            elif x in cm.cmap_d.keys():
+                c = x
+            else:
+                raise ValueError('%s is not an acceptable colormap' % x)
+        elif (isinstance(x, list) | isinstance(x, np.ndarray)):
+            if np.all([colors.is_color_like(c) for c in x]):
+                c = np.array([colors.to_rgba(c) for c in x])
 
+
+
+
+def _check_cmap(x):
+    """Checks that a read object qualifies as a colormap
+
+    To be developed further!
+    """
+    pass
+    # if isinstance(x, str):
+    #     if colors.is_color_like(x):
+    #         c = np.array([colors.to_rgba(x)])
+    #     elif x in cm.cmap_d.keys():
+    #         c = x
+    #     else:
+    #         raise ValueError('%s is not an acceptable colormap' % x)
+
+
+
+    # return x
